@@ -1,0 +1,226 @@
+/*
+ * Animation for HeroPreview. Base (un-animated) states are the "everything done" end state,
+ * so with reduced motion the preview reads as a finished, static card.
+ * All selectors are scoped under .hero-trailer to keep these short class names local.
+ */
+.hero-trailer .chk {
+  stroke-dasharray: 30;
+  stroke-dashoffset: 0;
+}
+.hero-trailer .flt {
+  opacity: 0;
+}
+.hero-trailer .xpfill {
+  transform-box: fill-box;
+  transform-origin: left center;
+  transform: scaleX(0.88);
+}
+.hero-trailer .badge {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.hero-trailer .rankmk {
+  transform: translate(58px, -6px);
+}
+.hero-trailer .rk1 {
+  opacity: 0;
+}
+.hero-trailer .seg {
+  stroke-dasharray: 60;
+  stroke-dashoffset: 0;
+}
+
+.hero-anim .chk1 {
+  animation: hero-chk1 6s ease-out infinite;
+}
+.hero-anim .chk2 {
+  animation: hero-chk2 6s ease-out infinite;
+}
+.hero-anim .flt1 {
+  animation: hero-flt1 6s ease-out infinite;
+}
+.hero-anim .flt2 {
+  animation: hero-flt2 6s ease-out infinite;
+}
+.hero-anim .xpfill {
+  animation: hero-xp 6s cubic-bezier(0.3, 0.7, 0.2, 1) infinite;
+}
+.hero-anim .badge {
+  animation: hero-badge 6s ease-in-out infinite;
+}
+.hero-anim .card3 {
+  animation: hero-nudge 6s ease-in-out infinite;
+}
+.hero-anim .rankmk {
+  animation: hero-climb 6s cubic-bezier(0.3, 0.7, 0.2, 1) infinite;
+}
+.hero-anim .rk1 {
+  animation: hero-rk1 6s ease infinite;
+}
+.hero-anim .rk2 {
+  animation: hero-rk2 6s ease infinite;
+}
+.hero-anim .seg {
+  animation: hero-seg 6s cubic-bezier(0.3, 0.7, 0.2, 1) infinite;
+}
+
+@keyframes hero-climb {
+  0%,
+  58% {
+    transform: translate(0, 0);
+  }
+  66%,
+  94% {
+    transform: translate(58px, -6px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+@keyframes hero-seg {
+  0%,
+  58% {
+    stroke-dashoffset: 60;
+  }
+  66%,
+  94% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 60;
+  }
+}
+@keyframes hero-rk1 {
+  0%,
+  60% {
+    opacity: 1;
+  }
+  64%,
+  96% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes hero-rk2 {
+  0%,
+  60% {
+    opacity: 0;
+  }
+  64%,
+  96% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes hero-chk1 {
+  0%,
+  10% {
+    stroke-dashoffset: 30;
+  }
+  20%,
+  94% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 30;
+  }
+}
+@keyframes hero-chk2 {
+  0%,
+  38% {
+    stroke-dashoffset: 30;
+  }
+  48%,
+  94% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 30;
+  }
+}
+@keyframes hero-flt1 {
+  0%,
+  18% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  22% {
+    opacity: 1;
+  }
+  36%,
+  100% {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+}
+@keyframes hero-flt2 {
+  0%,
+  46% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+  }
+  64%,
+  100% {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+}
+@keyframes hero-xp {
+  0%,
+  20% {
+    transform: scaleX(0.55);
+  }
+  28%,
+  48% {
+    transform: scaleX(0.7);
+  }
+  56%,
+  94% {
+    transform: scaleX(0.88);
+  }
+  100% {
+    transform: scaleX(0.55);
+  }
+}
+@keyframes hero-badge {
+  0%,
+  54% {
+    transform: scale(1);
+  }
+  60% {
+    transform: scale(1.18);
+  }
+  66%,
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes hero-nudge {
+  0%,
+  70% {
+    transform: translateX(0);
+  }
+  74% {
+    transform: translateX(4px);
+  }
+  78% {
+    transform: translateX(-4px);
+  }
+  82%,
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-anim * {
+    animation: none !important;
+  }
+}
