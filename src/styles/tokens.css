@@ -1,0 +1,29 @@
+:root {
+  /* surfaces */
+  --bg: #0d0f14;
+  --surface: #141821;
+  --surface-2: #1c212b;
+  --line: #262c38;
+  --line-strong: #2e3543;
+
+  /* text */
+  --text: #f3f1ea;
+  --text-soft: #b4bcc9;
+  --text-muted: #9aa3b2;
+  --text-faint: #7e8798;
+
+  /* brand & semantic accents */
+  --accent: #c8f25a;
+  --accent-ink: #0d0f14; /* text on top of --accent */
+  --xp: #ffb547;
+  --streak: #ff8a3d;
+  --rank: #8fa8ff;
+  --danger: #ff6b6b;
+
+  /* fonts */
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  color-scheme: dark;
+}
