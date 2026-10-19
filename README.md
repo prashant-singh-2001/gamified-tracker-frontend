@@ -40,6 +40,9 @@ Requires Node 22+ (developed on Node 24).
 
 By default `VITE_API_BASE_URL` is empty and the Vite dev server **proxies `/api` and `/auth` to
 `http://localhost:8080`**, so the browser makes same-origin requests and no CORS setup is needed.
+The proxy also strips the `Origin` header: browsers send it on POSTs even same-origin, and the
+gateway's closed CORS policy would otherwise answer register/login with a bare
+`403 Invalid CORS request` ("You don't have permission to do that.").
 
 To call the gateway directly instead, set `VITE_API_BASE_URL=http://localhost:8080` and add
 `CORS_ALLOWED_ORIGINS=http://localhost:5173` to the backend `.env`.
