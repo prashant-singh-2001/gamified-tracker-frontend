@@ -44,7 +44,7 @@ const routes: RouteObject[] = [
           </RequireAuth>
         ),
         children: [
-          { index: true, ...page(() => import('@/features/home/pages/TodayPage')) },
+          { index: true, ...page(() => import('@/features/home/pages/HomePage')) },
           { path: 'log', ...page(() => import('@/features/log-activity/pages/LogActivityPage')) },
           {
             path: 'log/result/:logId',

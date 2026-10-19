@@ -4,7 +4,8 @@ export const qk = {
     all: ['ranks'] as const,
     me: () => ['ranks', 'me'] as const,
     ladder: () => ['ranks', 'ladder'] as const,
-    tier: (tier: string) => ['ranks', 'tier', tier] as const,
+    myBoard: () => ['ranks', 'myBoard'] as const,
+    tier: (tier: string, size: number) => ['ranks', 'tier', tier, size] as const,
   },
   leaderboard: {
     global: () => ['leaderboard', 'global'] as const,
