@@ -54,6 +54,9 @@ export function useLog(logId: string | undefined) {
   return useQuery({
     queryKey: qk.activityLog.byId(valid ? id : -1),
     enabled: valid,
+    // The cached POST response knows the bonus and streak multipliers; the GET does not. Keep it
+    // fresh for a while so revisiting the result doesn't replace it with the poorer version.
+    staleTime: 5 * 60_000,
     queryFn: async () => (await api.get<ActivityLogResponse>(endpoints.activityLog.byId(id))).data,
   });
 }

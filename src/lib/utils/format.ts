@@ -41,3 +41,8 @@ export function formatTimeRange(start: Date, end: Date, now: Date = new Date()):
     : end.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   return `${day} · ${time(start)} – ${time(end)}`;
 }
+
+/** 1.5 → "×1.5", 1.15 → "×1.15", 1 → "×1". */
+export function formatMultiplier(value: number): string {
+  return `×${Number(value.toFixed(2))}`;
+}

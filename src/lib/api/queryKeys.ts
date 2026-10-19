@@ -47,6 +47,7 @@ export const qk = {
   notifications: {
     all: ['notifications'] as const,
     list: () => ['notifications', 'list'] as const,
+    levelUpFor: (logId: number) => ['notifications', 'levelUpFor', logId] as const,
     unreadCount: () => ['notifications', 'unreadCount'] as const,
   },
 } as const;
