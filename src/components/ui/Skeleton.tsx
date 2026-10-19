@@ -12,12 +12,21 @@ export function Skeleton({ className, ...rest }: ComponentProps<'div'>) {
   );
 }
 
-export function CardSkeleton({ label = 'Loading' }: { label?: string }) {
+export function CardSkeleton({
+  label = 'Loading',
+  className,
+}: {
+  label?: string;
+  className?: string;
+}) {
   return (
     <div
       role="status"
       aria-label={label}
-      className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-5"
+      className={cn(
+        'flex flex-col gap-3 rounded-[20px] border border-line bg-surface p-6',
+        className,
+      )}
     >
       <Skeleton className="h-4 w-1/3" />
       <Skeleton className="h-8 w-2/3" />
