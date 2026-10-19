@@ -18,6 +18,7 @@
   --color-streak: var(--streak);
   --color-rank: var(--rank);
   --color-danger: var(--danger);
+  --color-pending: var(--pending);
 
   --font-display: var(--font-display);
   --font-sans: var(--font-body);
@@ -47,6 +48,38 @@
   a {
     color: inherit;
   }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+@keyframes badge-in {
+  from {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes burst {
+  from {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+dialog[open].sheet {
+  animation: sheet-in 220ms ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {

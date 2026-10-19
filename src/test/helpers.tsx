@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider, type RouteObject } from 'react-router';
 import type { Role } from '@/lib/api/types';
 import { useAuthStore } from '@/lib/auth/authStore';
@@ -17,16 +17,42 @@ export function signIn(userId = 1, role: Role = 'USER') {
   useAuthStore.getState().setAccessToken(makeAccessToken(userId, role));
 }
 
-/** No retries, so failing requests surface immediately instead of after a backoff. */
+const testClients = new Set<QueryClient>();
+
+/**
+ * No retries, so failures surface immediately. `staleTime` mirrors the app's, otherwise freshly
+ * seeded or fetched data would count as stale and be refetched the moment a component mounts.
+ */
 export function makeTestQueryClient() {
-  return new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: 30_000 }, mutations: { retry: false } },
   });
+  testClients.add(client);
+  return client;
 }
 
-export function renderRoutes(routes: RouteObject[], initialEntry = '/') {
+/**
+ * Waits for every in-flight request of every test client. Without this a test can finish while
+ * a request is still travelling, and that request then lands on the NEXT test's handlers.
+ */
+export async function settleTestQueryClients() {
+  await waitFor(() => {
+    for (const client of testClients) {
+      expect(client.isFetching() + client.isMutating()).toBe(0);
+    }
+  });
+  testClients.clear();
+}
+
+export function renderRoutes(
+  routes: RouteObject[],
+  initialEntry = '/',
+  /** Runs before the first render, e.g. to seed the cache like a just-completed mutation. */
+  seed?: (queryClient: QueryClient) => void,
+) {
   const router = createMemoryRouter(routes, { initialEntries: [initialEntry] });
   const queryClient = makeTestQueryClient();
+  seed?.(queryClient);
   const utils = render(
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />

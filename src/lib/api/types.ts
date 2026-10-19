@@ -76,3 +76,33 @@ export function getTierInfo(tier: RankTier): RankTierInfo {
   if (!info) throw new Error(`Unknown rank tier: ${tier}`);
   return info;
 }
+
+export type Category = 'STUDY' | 'WORK' | 'GAMING' | 'CHORES' | 'HEALTH' | 'OTHER';
+
+export const CATEGORIES: readonly Category[] = [
+  'STUDY',
+  'WORK',
+  'HEALTH',
+  'CHORES',
+  'GAMING',
+  'OTHER',
+];
+
+export const CATEGORY_LABEL: Record<Category, string> = {
+  STUDY: 'Study',
+  WORK: 'Work',
+  HEALTH: 'Health',
+  CHORES: 'Chores',
+  GAMING: 'Gaming',
+  OTHER: 'Other',
+};
+
+/** Mirrors activity-service Category.baseXpMultiplier(). */
+export const CATEGORY_DEFAULT_MULTIPLIER: Record<Category, number> = {
+  STUDY: 1.5,
+  WORK: 1.5,
+  HEALTH: 1.3,
+  OTHER: 1.0,
+  CHORES: 0.8,
+  GAMING: 0.5,
+};

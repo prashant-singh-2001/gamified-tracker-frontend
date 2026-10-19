@@ -19,6 +19,8 @@
   --streak: #ff8a3d;
   --rank: #8fa8ff;
   --danger: #ff6b6b;
+  /* XP on hold: cool grey so withheld XP never reads as earned (orange) XP */
+  --pending: #b4bcc9;
 
   /* fonts */
   --font-display: 'Bricolage Grotesque', system-ui, sans-serif;

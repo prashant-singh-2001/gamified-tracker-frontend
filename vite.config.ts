@@ -3,6 +3,10 @@ import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
+// Tests run in IST (UTC+5:30) rather than the machine's zone: the backend speaks UTC, so any code
+// that mixes up local and UTC time must fail the same way on a UTC CI runner as on a laptop.
+process.env.TZ = 'Asia/Kolkata';
+
 const GATEWAY = 'http://localhost:8080';
 
 // Browsers attach `Origin: http://localhost:5173` to POSTs even when they are same-origin, and the
