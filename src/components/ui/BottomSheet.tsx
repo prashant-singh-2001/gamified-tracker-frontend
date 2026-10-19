@@ -82,7 +82,7 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
         if (e.target === ref.current) handleClose();
       }}
       style={style}
-      className="sheet fixed inset-x-0 bottom-0 m-0 h-[var(--sheet-h)] max-h-none w-full max-w-none flex-col rounded-t-[20px] border border-line-strong bg-surface p-0 text-text open:flex backdrop:bg-black/60 lg:inset-auto lg:m-auto lg:h-auto lg:max-h-[90dvh] lg:w-[min(92vw,34rem)] lg:rounded-[20px]"
+      className="sheet fixed inset-x-0 top-auto bottom-0 m-0 h-[var(--sheet-h)] max-h-none w-full max-w-none flex-col rounded-t-[20px] border border-line-strong bg-surface p-0 text-text open:flex backdrop:bg-black/60 lg:inset-0 lg:m-auto lg:h-fit lg:max-h-[90dvh] lg:w-[min(92vw,34rem)] lg:rounded-[20px]"
     >
       <button
         type="button"
