@@ -4,10 +4,11 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import type { CatalogActivity, Streak } from '@/features/activities/types';
 import type { ActivityLogResponse } from '@/features/log-activity/types';
-import type { RankTierMember } from '@/features/ranks/types';
+import type { RankDistribution, RankTierMember } from '@/features/ranks/types';
 import type { WeeklyReport } from '@/features/stats/types';
-import type { Category, RankCard, RankTier } from '@/lib/api/types';
+import { RANK_TIERS, type Category, type RankCard, type RankTier } from '@/lib/api/types';
 import { toServerDate } from '@/lib/utils/serverTime';
+import { useLocation } from 'react-router';
 import { renderRoutes, signIn } from '@/test/helpers';
 import { server } from '@/test/server';
 import HomePage from './HomePage';
@@ -88,20 +89,30 @@ type Mocks = {
   myBoard?: RankTierMember[];
   streaks?: Streak[];
   weekly?: WeeklyReport;
+  distribution?: RankDistribution[];
+  /** Rows a tier board returns (default 3, i.e. a quiet tier). */
+  tierRows?: number;
 };
 
 /** Registers every endpoint Home touches. `me/leaderboard` must come before `:tier/leaderboard`. */
 function mockHome(m: Mocks = {}) {
   const tierRequests: string[] = [];
+  const tierSizes: string[] = [];
   server.use(
     http.get('*/api/activitylog/user/:id', () => HttpResponse.json(m.logs ?? [])),
     http.get('*/api/activity/', () => HttpResponse.json(m.catalog ?? [])),
     http.get('*/api/ranks/me/leaderboard', () => HttpResponse.json(m.myBoard ?? [])),
-    http.get('*/api/ranks/:tier/leaderboard', ({ params }) => {
+    http.get('*/api/ranks/:tier/leaderboard', ({ params, request }) => {
       const tier = String(params.tier);
       tierRequests.push(tier);
-      return HttpResponse.json(members(3, tier as RankTier));
+      tierSizes.push(new URL(request.url).searchParams.get('size') ?? '');
+      return HttpResponse.json(members(m.tierRows ?? 3, tier as RankTier));
     }),
+    http.get('*/api/ranks', () =>
+      HttpResponse.json(
+        m.distribution ?? RANK_TIERS.map((t) => ({ tier: t.id, userCount: m.tierRows ?? 3 })),
+      ),
+    ),
     http.get('*/api/ranks/me', () =>
       m.rank === null
         ? HttpResponse.json({ detail: 'No rank yet for userId: 7' }, { status: 404 })
@@ -112,7 +123,7 @@ function mockHome(m: Mocks = {}) {
       HttpResponse.json(m.weekly ?? week()),
     ),
   );
-  return { tierRequests };
+  return { tierRequests, tierSizes };
 }
 
 function renderHome() {
@@ -194,6 +205,26 @@ describe('Home — rank cards', () => {
     expect(within(rows.at(-1)!).getByText('You')).toBeInTheDocument();
   });
 
+  it('shows how far through the tier band I am, with the next tier as the goal', async () => {
+    // Alpine spans top 25-50%; 0.4 is 60% of the way down it, so 40% of the way up.
+    mockHome({ rank: { ...rankCard, percentile: 0.4 }, myBoard: members(30, 'ALPINE', 15) });
+    renderHome();
+
+    const bar = await screen.findByRole('progressbar', { name: /Progress through Alpine/ });
+    expect(bar).toHaveAttribute('aria-valuenow', '40');
+    expect(screen.getByText('→ Ridge')).toBeInTheDocument();
+    expect(screen.getByText('Alpine · 25–50%')).toBeInTheDocument();
+  });
+
+  it("tells me when I'm the only climber in my tier", async () => {
+    mockHome({ rank: rankCard, myBoard: members(1, 'ALPINE', 0) });
+    renderHome();
+
+    const table = await screen.findByRole('table', { name: /around your position/i });
+    expect(within(table).getAllByRole('row').slice(1)).toHaveLength(1);
+    expect(screen.getByText("You're the only climber in Alpine for now.")).toBeInTheDocument();
+  });
+
   it('invites an unranked user to log, and shows the tier ladder', async () => {
     mockHome({ rank: null });
     renderHome();
@@ -209,24 +240,77 @@ describe('Home — rank cards', () => {
 });
 
 describe('Home — tier board', () => {
-  it('defaults to my own tier and switches when another is picked', async () => {
+  const stepUp = async (times: number) => {
+    for (let i = 0; i < times; i++) {
+      await userEvent.click(screen.getByRole('button', { name: 'Higher tier' }));
+    }
+  };
+
+  it('defaults to my own tier and steps up the mountain with the arrows', async () => {
     const { tierRequests } = mockHome({ rank: rankCard, myBoard: members(5, 'ALPINE', 2) });
     renderHome();
 
-    const alpine = await screen.findByRole('button', { name: 'Alpine' });
     await waitFor(() => expect(tierRequests).toContain('ALPINE'));
-    expect(alpine).toHaveAttribute('aria-pressed', 'true');
+    expect(await screen.findByText('Your tier')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Summit' }));
+    await stepUp(3); // Alpine → Ridge → Peak → Summit
     await waitFor(() => expect(tierRequests).toContain('SUMMIT'));
-    expect(screen.getByRole('button', { name: 'Summit' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('table', { name: 'Top 5 in Summit' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Higher tier' })).toBeDisabled();
+    expect(await screen.findByRole('table', { name: 'Top 8 in Summit' })).toBeInTheDocument();
+    expect(screen.queryByText('Your tier')).not.toBeInTheDocument(); // not my tier any more
   });
 
-  it('starts an unranked user at Basecamp', async () => {
+  it('has no scrolling chip row: the tier picker is two arrow buttons', async () => {
+    mockHome({ rank: rankCard, myBoard: members(5, 'ALPINE', 2) });
+    renderHome();
+    await screen.findByText('Your tier'); // the rank has loaded, so Alpine is selected
+    expect(screen.getByRole('button', { name: 'Lower tier' })).toBeEnabled();
+    expect(screen.queryByRole('group', { name: 'Choose a tier' })).not.toBeInTheDocument();
+  });
+
+  it('starts an unranked user at Basecamp, where no lower tier exists', async () => {
     const { tierRequests } = mockHome({ rank: null });
     renderHome();
     await waitFor(() => expect(tierRequests).toEqual(['BASECAMP']));
+    expect(screen.getByRole('button', { name: 'Lower tier' })).toBeDisabled();
+  });
+
+  it('asks for eight rows', async () => {
+    const { tierSizes } = mockHome({ rank: rankCard, myBoard: members(5, 'ALPINE', 2) });
+    renderHome();
+    await waitFor(() => expect(tierSizes).toContain('8'));
+  });
+
+  it('fills a quiet tier with a centred count instead of a blank area', async () => {
+    mockHome({
+      rank: rankCard,
+      myBoard: members(5, 'ALPINE', 2),
+      distribution: RANK_TIERS.map((t) => ({ tier: t.id, userCount: t.id === 'ALPINE' ? 3 : 0 })),
+    });
+    renderHome();
+    expect(await screen.findByText('3 climbers in Alpine')).toBeInTheDocument();
+  });
+
+  it('says so when a tier is empty', async () => {
+    mockHome({ rank: rankCard, myBoard: members(5, 'ALPINE', 2), tierRows: 0 });
+    renderHome();
+    expect(await screen.findByText('No one in Alpine yet')).toBeInTheDocument();
+  });
+
+  it('shows no filler once the board has a full eight rows', async () => {
+    mockHome({ rank: rankCard, myBoard: members(5, 'ALPINE', 2), tierRows: 8 });
+    renderHome();
+    await screen.findByRole('table', { name: 'Top 8 in Alpine' });
+    expect(screen.queryByText(/climbers? in Alpine/)).not.toBeInTheDocument();
+  });
+
+  it('keeps the link to the full board', async () => {
+    mockHome({ rank: rankCard, myBoard: members(5, 'ALPINE', 2) });
+    renderHome();
+    expect(await screen.findByRole('link', { name: 'See the full Alpine board' })).toHaveAttribute(
+      'href',
+      '/app/ranks/ALPINE',
+    );
   });
 });
 
@@ -278,5 +362,132 @@ describe('Home — this week', () => {
 
     expect(await screen.findByText('Log an activity to start your week.')).toBeInTheDocument();
     expect(screen.getByRole('list', { name: 'No activity yet this week' })).toBeInTheDocument();
+  });
+});
+
+describe('Home — this week chart', () => {
+  it('labels every bar with its XP', async () => {
+    mockHome({ weekly: week() });
+    renderHome();
+
+    await screen.findByText('560 XP');
+    // 7 bars of 80 XP each → seven value labels (the Today stat also reads 80).
+    expect(screen.getAllByText('80').length).toBeGreaterThanOrEqual(7);
+  });
+});
+
+describe('Home — today at a glance', () => {
+  it("shows today's XP and minutes from the weekly report and my best live streak", async () => {
+    mockHome({
+      streaks: [
+        { activityId: 10, currentStreak: 6, longestStreak: 9, lastActivityDate: utcDay(0) },
+        { activityId: 20, currentStreak: 3, longestStreak: 3, lastActivityDate: utcDay(1) },
+        { activityId: 30, currentStreak: 20, longestStreak: 20, lastActivityDate: utcDay(9) }, // dead
+      ],
+    });
+    renderHome();
+
+    const today = await screen.findByRole('region', { name: 'Today' });
+    await waitFor(() =>
+      expect(within(today).getByText('Best streak').parentElement).toHaveTextContent('6 days'),
+    );
+    expect(within(today).getByText('80')).toBeInTheDocument(); // XP today
+    expect(within(today).getByText('40')).toBeInTheDocument(); // minutes today
+  });
+
+  it('shows 0 for a user with no streak', async () => {
+    mockHome({});
+    renderHome();
+    const today = await screen.findByRole('region', { name: 'Today' });
+    await waitFor(() =>
+      expect(within(today).getByText('Best streak').parentElement).toHaveTextContent('0 days'),
+    );
+  });
+});
+
+describe('Home — natural-language box', () => {
+  function LogProbe() {
+    const { pathname, search } = useLocation();
+    return <p>sheet at {pathname + search}</p>;
+  }
+
+  it('hands the sentence to the Log sheet instead of saving anything', async () => {
+    mockHome({});
+    signIn(ME, 'USER');
+    renderRoutes(
+      [
+        { path: '/app', element: <HomePage /> },
+        { path: '/app/log', element: <LogProbe /> },
+      ],
+      '/app',
+    );
+
+    const box = await screen.findByRole('textbox', { name: 'Tell us what you did' });
+    expect(box).toHaveAttribute('placeholder', expect.stringContaining('Studied Spring Boot'));
+    await userEvent.type(box, 'Ran 5 km this morning');
+    await userEvent.click(screen.getByRole('button', { name: 'Understand it' }));
+
+    expect(
+      await screen.findByText('sheet at /app/log?text=Ran%205%20km%20this%20morning'),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('Home — recent activity', () => {
+  const at = (
+    daysAgo: number,
+    id: number,
+    name: string,
+    extra: Partial<ActivityLogResponse> = {},
+  ) => ({
+    ...log(id, name),
+    endTime: `${utcDay(daysAgo)}T10:00:00`,
+    ...extra,
+  });
+
+  it('lists the four most recent logs, newest first', async () => {
+    mockHome({
+      logs: [
+        at(5, 1, 'Fifth'),
+        at(0, 2, 'Newest'),
+        at(3, 3, 'Fourth'),
+        at(1, 4, 'Second'),
+        at(2, 5, 'Third'),
+      ],
+    });
+    renderHome();
+
+    const recent = await screen.findByRole('region', { name: 'Recent activity' });
+    const names = within(await within(recent).findByRole('list'))
+      .getAllByRole('listitem')
+      .map((li) => li.textContent ?? '');
+    expect(names).toHaveLength(4);
+    expect(names[0]).toContain('Newest');
+    expect(names[3]).toContain('Fourth');
+    expect(within(recent).queryByText('Fifth')).not.toBeInTheDocument();
+  });
+
+  it('never shows held or rejected XP as earned', async () => {
+    mockHome({
+      logs: [
+        at(0, 1, 'Held', { reviewStatus: 'FLAGGED', xpEarned: 900 }),
+        at(1, 2, 'Rejected', { reviewStatus: 'REJECTED', xpEarned: 500 }),
+        at(2, 3, 'Counted', { xpEarned: 60 }),
+      ],
+    });
+    renderHome();
+
+    const recent = await screen.findByRole('region', { name: 'Recent activity' });
+    expect(await within(recent).findByText('900 on hold')).toBeInTheDocument();
+    expect(within(recent).getByText('0 XP')).toBeInTheDocument();
+    expect(within(recent).getByText('+60 XP')).toBeInTheDocument();
+    expect(within(recent).queryByText('+900 XP')).not.toBeInTheDocument();
+  });
+
+  it('has a friendly empty state for a new user', async () => {
+    mockHome({ logs: [] });
+    renderHome();
+    const recent = await screen.findByRole('region', { name: 'Recent activity' });
+    expect(await within(recent).findByText(/Nothing logged yet/)).toBeInTheDocument();
   });
 });

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, waitFor } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider, type RouteObject } from 'react-router';
 import type { Role } from '@/lib/api/types';
 import { useAuthStore } from '@/lib/auth/authStore';
@@ -32,15 +32,21 @@ export function makeTestQueryClient() {
 }
 
 /**
- * Waits for every in-flight request of every test client. Without this a test can finish while
- * a request is still travelling, and that request then lands on the NEXT test's handlers.
+ * Waits until every test client has been idle for a few consecutive checks. Without this a test
+ * can finish while a request is still travelling, and that request then lands on the NEXT test's
+ * handlers. One idle check is not enough: a request that finishes can unlock a dependent one
+ * (rank card -> own tier board), and that follow-up starts a tick after the first goes quiet.
  */
 export async function settleTestQueryClients() {
-  await waitFor(() => {
-    for (const client of testClients) {
-      expect(client.isFetching() + client.isMutating()).toBe(0);
-    }
-  });
+  const IDLE_CHECKS = 4;
+  const deadline = Date.now() + 3_000;
+  let idle = 0;
+  while (idle < IDLE_CHECKS) {
+    if (Date.now() > deadline) throw new Error('Queries were still running after 3s');
+    await new Promise((resolve) => setTimeout(resolve, 15));
+    const busy = [...testClients].some((c) => c.isFetching() + c.isMutating() > 0);
+    idle = busy ? 0 : idle + 1;
+  }
   testClients.clear();
 }
 

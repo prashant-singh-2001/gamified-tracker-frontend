@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { useCatalog } from '@/features/activities/api';
@@ -31,6 +31,7 @@ export default function LogActivitySheet() {
   const catalog = useCatalog();
   const natural = useNaturalDraft();
   const logActivity = useLogActivity();
+  const initialText = params.get('text') ?? '';
 
   const [view, setView] = useState<'input' | 'confirm'>('input');
   const [formKey, setFormKey] = useState(0);
@@ -76,6 +77,17 @@ export default function LogActivitySheet() {
       },
     );
   }
+
+  // A sentence typed on Home arrives as ?text=… and goes through the same draft → confirm flow.
+  // useEffectEvent keeps the effect from re-running whenever onNatural's identity changes.
+  const draftFromHome = useEffectEvent((text: string) => onNatural(text));
+  const startedFromHome = useRef(false);
+  useEffect(() => {
+    if (initialText && !startedFromHome.current) {
+      startedFromHome.current = true;
+      draftFromHome(initialText);
+    }
+  }, [initialText]);
 
   function onContinue(values: LogFormValues) {
     setConfirm(confirmFromForm(values));
@@ -128,6 +140,7 @@ export default function LogActivitySheet() {
           {quickLog === 'on' && (
             <>
               <NaturalInput
+                initialText={initialText}
                 onSubmit={onNatural}
                 pending={natural.isPending}
                 error={natural.isError ? natural.error : null}
