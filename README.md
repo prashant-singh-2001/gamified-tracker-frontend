@@ -53,6 +53,10 @@ Self-registration always creates a `USER`. Admins are provisioned on the backend
 `app.admin.bootstrap.*` properties (see the backend's `.env.example` / `application.yaml`), never
 through the UI. Log in with that account to reach `/admin`.
 
+**The activity catalog starts empty.** Only an `ADMIN` can create activities (`POST /api/activity/`),
+and nobody can log anything until at least one exists, so seed a few as the admin first (Study,
+Running, …). Until then Log Activity answers every name with a not-found and an empty suggestion list.
+
 New accounts show a "not ranked yet" state on the Today page until the backend's next rank
 recompute (every 5 minutes by default).
 
