@@ -8,10 +8,13 @@ export function formatNumber(value: number): string {
   return numberFormat.format(value);
 }
 
-/** "Top 25%" from a position in the ranking; never shows "Top 0%". */
-export function formatTopPercent(position: number, totalUsers: number): string {
-  if (totalUsers <= 0) return '—';
-  return `Top ${Math.max(1, Math.ceil((position / totalUsers) * 100))}%`;
+/**
+ * "Top 31%" from the rank card's `percentile` (a top fraction, 0 = best). That is the number the
+ * backend assigns tiers from, so it always agrees with the tier band shown next to it. Never
+ * "Top 0%".
+ */
+export function formatTopPercent(percentile: number): string {
+  return `Top ${Math.max(1, Math.round(percentile * 100))}%`;
 }
 
 export function formatDate(iso: string): string {
@@ -45,4 +48,15 @@ export function formatTimeRange(start: Date, end: Date, now: Date = new Date()):
 /** 1.5 → "×1.5", 1.15 → "×1.15", 1 → "×1". */
 export function formatMultiplier(value: number): string {
   return `×${Number(value.toFixed(2))}`;
+}
+
+/** "just now", "5 min ago", "3 h ago", "Yesterday", then the weekday and date. */
+export function timeAgo(date: Date, now: Date = new Date()): string {
+  const minutes = Math.floor((now.getTime() - date.getTime()) / 60_000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  if (hours < 48) return 'Yesterday';
+  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
