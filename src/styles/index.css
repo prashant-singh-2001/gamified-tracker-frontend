@@ -18,6 +18,7 @@
   --color-streak: var(--streak);
   --color-rank: var(--rank);
   --color-danger: var(--danger);
+  --color-pending: var(--pending);
 
   --font-display: var(--font-display);
   --font-sans: var(--font-body);
@@ -47,6 +48,17 @@
   a {
     color: inherit;
   }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+dialog[open].sheet {
+  animation: sheet-in 220ms ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react';
 import { cn } from '@/lib/utils/cn';
 
-type Tone = 'neutral' | 'accent' | 'xp' | 'streak' | 'rank' | 'danger';
+type Tone = 'neutral' | 'accent' | 'xp' | 'streak' | 'rank' | 'danger' | 'pending';
 
 const TONES: Record<Tone, string> = {
   neutral: 'border-line-strong text-soft',
@@ -10,6 +10,7 @@ const TONES: Record<Tone, string> = {
   streak: 'border-streak/50 text-streak',
   rank: 'border-rank/50 text-rank',
   danger: 'border-danger/50 text-danger',
+  pending: 'border-pending/50 text-pending',
 };
 
 export function Badge({
