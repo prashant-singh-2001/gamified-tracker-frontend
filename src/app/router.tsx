@@ -44,8 +44,17 @@ const routes: RouteObject[] = [
           </RequireAuth>
         ),
         children: [
-          { index: true, ...page(() => import('@/features/home/pages/HomePage')) },
-          { path: 'log', ...page(() => import('@/features/log-activity/pages/LogActivityPage')) },
+          {
+            // Home is a layout here so /app/log can open the Log sheet over it.
+            ...page(() => import('@/features/home/pages/HomePage')),
+            children: [
+              { index: true },
+              {
+                path: 'log',
+                ...page(() => import('@/features/log-activity/pages/LogActivitySheet')),
+              },
+            ],
+          },
           {
             path: 'log/result/:logId',
             ...page(() => import('@/features/log-activity/pages/LogResultPage')),

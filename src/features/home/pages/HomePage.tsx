@@ -1,3 +1,4 @@
+import { Outlet } from 'react-router';
 import { LogCard } from '../components/LogCard';
 import { RankSummaryCard } from '../components/RankSummaryCard';
 import { TierBoardCard } from '../components/TierBoardCard';
@@ -20,6 +21,8 @@ export default function HomePage() {
       <div className="lg:col-span-8 lg:row-start-2">
         <WeekTracksCard />
       </div>
+      {/* /app/log renders the Log Activity sheet here, on top of Home. */}
+      <Outlet />
     </div>
   );
 }

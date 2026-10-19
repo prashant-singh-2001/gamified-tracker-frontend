@@ -16,18 +16,23 @@ export const qk = {
     list: () => ['activities', 'list'] as const,
   },
   activityLog: {
+    /** Prefixes, for invalidating every user's/streak list at once without touching `byId`. */
+    allByUser: () => ['activityLog', 'user'] as const,
+    allStreaks: () => ['activityLog', 'streaks'] as const,
     byUser: (userId: number) => ['activityLog', 'user', userId] as const,
     byId: (logId: number | string) => ['activityLog', logId] as const,
     streaks: (userId: number) => ['activityLog', 'streaks', userId] as const,
     flagged: () => ['activityLog', 'flagged'] as const,
   },
   analytics: {
+    all: ['analytics'] as const,
     xpOverTime: (userId: number) => ['analytics', 'xpOverTime', userId] as const,
     categorySummary: (userId: number) => ['analytics', 'categorySummary', userId] as const,
     weeklyReport: (userId: number) => ['analytics', 'weeklyReport', userId] as const,
     bestTimeOfDay: (userId: number) => ['analytics', 'bestTimeOfDay', userId] as const,
   },
   levels: {
+    allPrefix: ['levels'] as const,
     all: () => ['levels', 'all'] as const,
     byUser: (userId: number) => ['levels', 'user', userId] as const,
     byActivity: (activityId: number | string) => ['levels', 'activity', activityId] as const,
@@ -40,6 +45,7 @@ export const qk = {
     weekly: () => ['insights', 'weekly'] as const,
   },
   notifications: {
+    all: ['notifications'] as const,
     list: () => ['notifications', 'list'] as const,
     unreadCount: () => ['notifications', 'unreadCount'] as const,
   },
