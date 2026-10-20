@@ -96,7 +96,7 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
         <GripHorizontal className="size-6" aria-hidden="true" />
       </button>
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pt-0 pb-6 lg:pt-5">
-        <h2 id={titleId} className="font-display text-xl font-bold">
+        <h2 id={titleId} className="font-display text-3xl leading-none font-extrabold">
           {title}
         </h2>
         {children}
