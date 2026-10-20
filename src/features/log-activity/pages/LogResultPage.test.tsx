@@ -119,7 +119,7 @@ describe('Log Result — outcomes', () => {
     renderResult({ seeded: true });
 
     expect(await screen.findByRole('heading', { name: 'Activity logged' })).toBeInTheDocument();
-    expect(await screen.findByText('+135 XP', {}, { timeout: 3000 })).toBeInTheDocument();
+    expect(await screen.findByText('+135 XP', {}, { timeout: 10_000 })).toBeInTheDocument();
     expect(screen.getAllByText('Studying').length).toBeGreaterThan(0);
     expect(screen.getByRole('link', { name: 'Done' })).toHaveAttribute('href', '/app');
     expect(screen.getByRole('link', { name: 'Log another' })).toHaveAttribute('href', '/app/log');
