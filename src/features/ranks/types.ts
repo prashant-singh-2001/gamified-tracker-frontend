@@ -7,6 +7,8 @@ export type RankTierMember = {
   totalXp: number;
   overallLevel: number;
   tier: RankTier;
+  /** First name plus last initial ("Ada L."); null for an account that no longer exists. */
+  displayName?: string | null;
 };
 
 /** Row of `GET /api/ranks`. */

@@ -19,7 +19,7 @@ function Stat({
     <div className="flex flex-col gap-1">
       <dt className="text-xs text-muted">{label}</dt>
       <dd className="whitespace-nowrap">
-        <span className={`font-mono text-2xl font-bold ${tone}`}>{value}</span>
+        <span className={`font-display text-4xl leading-none font-bold ${tone}`}>{value}</span>
         {unit && (
           <>
             {' '}
@@ -48,7 +48,7 @@ export function TodayStats() {
   const loading = report.isPending;
   return (
     <section aria-label="Today" className="flex flex-col gap-3">
-      <h3 className="font-mono text-xs font-bold tracking-widest text-muted uppercase">Today</h3>
+      <h3 className="sr-only">Today</h3>
       <dl className="grid grid-cols-3 gap-4">
         <Stat
           label="XP"

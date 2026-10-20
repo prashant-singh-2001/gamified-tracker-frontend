@@ -1,5 +1,5 @@
-/** `GET /api/notifications/unread-count` — note the capital `C` in the key. */
-export type UnreadCount = { Count: number };
+/** `GET /api/notifications/unread-count`. (The old capital-`C` key has been removed.) */
+export type UnreadCount = { count: number };
 
 /** Row of `GET /api/notifications` (LevelUpEventDto). */
 export type LevelUpEvent = {

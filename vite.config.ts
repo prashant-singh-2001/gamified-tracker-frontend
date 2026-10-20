@@ -33,6 +33,7 @@ export default defineConfig({
     proxy: {
       '/api': proxyTo,
       '/auth': proxyTo,
+      '/users': proxyTo,
     },
   },
   test: {

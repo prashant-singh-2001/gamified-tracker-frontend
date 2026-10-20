@@ -54,6 +54,22 @@ export function getErrorMessage(err: unknown): string {
   return toApiError(err).message;
 }
 
+/**
+ * Per-field messages from a validation `400` (`errors` extension member: field → message),
+ * limited to the `known` field names so an unexpected key never swallows the form-level message.
+ * Null when there is nothing a field can show.
+ */
+export function fieldErrors(err: unknown, known: readonly string[]): Record<string, string> | null {
+  const { status, problem } = toApiError(err);
+  const raw = problem?.errors;
+  if (status !== 400 || typeof raw !== 'object' || raw === null) return null;
+  const picked: Record<string, string> = {};
+  for (const [field, message] of Object.entries(raw)) {
+    if (known.includes(field) && typeof message === 'string') picked[field] = message;
+  }
+  return Object.keys(picked).length > 0 ? picked : null;
+}
+
 export function isNotFound(err: unknown): boolean {
   return toApiError(err).status === 404;
 }

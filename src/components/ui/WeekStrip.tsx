@@ -5,7 +5,7 @@ import { formatNumber, formatXp } from '@/lib/utils/format';
 import { serverToday } from '@/lib/utils/serverTime';
 
 type WeekStripProps = {
-  /** Daily XP, oldest first (the API returns the rolling last 7 days). Empty → placeholder bars. */
+  /** Daily XP, oldest first (Monday to Sunday). Empty → placeholder bars. */
   days: readonly DailyXp[];
   /** XP just earned today: today's bar grows from `total - addedXp` to `total`. */
   addedXp?: number;
@@ -32,7 +32,7 @@ function weekday(date: string): string {
   });
 }
 
-/** Seven daily XP bars with today outlined. Labels are the real weekdays of the rolling week. */
+/** Seven daily XP bars with today outlined; days after today are empty columns, not zeros. */
 export function WeekStrip({
   days,
   addedXp = 0,
@@ -101,23 +101,35 @@ export function WeekStrip({
         <ul className="relative flex h-full items-stretch justify-between gap-2">
           {days.map((day) => {
             const isToday = day.date === today;
+            const upcoming = day.date > today; // ISO dates compare as text
             const percent = (shown(day) / max) * TALLEST;
             return (
               <li
                 key={day.date}
                 className="relative flex-1"
-                aria-label={`${weekday(day.date)}${isToday ? ' (today)' : ''}: ${formatXp(day.totalXpEarned)}`}
+                aria-label={
+                  upcoming
+                    ? `${weekday(day.date)}: not yet`
+                    : `${weekday(day.date)}${isToday ? ' (today)' : ''}: ${formatXp(day.totalXpEarned)}`
+                }
               >
-                <div
-                  aria-hidden="true"
-                  className={cn(
-                    'absolute inset-x-0 bottom-0 rounded-md bg-accent transition-[height] duration-500',
-                    day.totalXpEarned === 0 && 'bg-line',
-                    isToday && 'outline-2 outline-offset-2 outline-accent/60',
-                  )}
-                  style={{ height: `${percent}%`, minHeight: MIN_BAR }}
-                />
-                {fill && (
+                {upcoming ? (
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-x-0 bottom-0 h-8 rounded-md border border-dashed border-line-strong"
+                  />
+                ) : (
+                  <div
+                    aria-hidden="true"
+                    className={cn(
+                      'absolute inset-x-0 bottom-0 rounded-md bg-accent transition-[height] duration-500',
+                      day.totalXpEarned === 0 && 'bg-line',
+                      isToday && 'outline-2 outline-offset-2 outline-accent/60',
+                    )}
+                    style={{ height: `${percent}%`, minHeight: MIN_BAR }}
+                  />
+                )}
+                {fill && !upcoming && (
                   <span
                     aria-hidden="true"
                     className={cn(
@@ -141,6 +153,7 @@ export function WeekStrip({
             className={cn(
               'flex-1 text-center font-mono text-xs',
               day.date === today ? 'font-bold text-text' : 'text-muted',
+              day.date > today && 'opacity-60',
             )}
           >
             {weekday(day.date).slice(0, 3)}

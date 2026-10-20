@@ -1,15 +1,39 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldPath, type FieldValues, type UseFormReturn } from 'react-hook-form';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
+import { fieldErrors, toApiError } from '@/lib/api/errors';
 import { useAuthStore } from '@/lib/auth/authStore';
 import { homeFor, safeNext } from '@/lib/auth/redirect';
 import { useLogin, useRegister } from '../api';
 import { FlipCard, type Face } from '../components/FlipCard';
 import { LoginFace } from '../components/LoginFace';
-import { AuthMap } from '../components/AuthMap';
+import { AuthStage } from '../components/AuthStage';
+import { ForgotFace } from '../components/ForgotFace';
 import { SignupFace } from '../components/SignupFace';
-import { loginSchema, registerSchema, type LoginForm, type RegisterForm } from '../schemas';
+import {
+  LOGIN_FIELDS,
+  REGISTER_FIELDS,
+  loginSchema,
+  registerSchema,
+  type LoginForm,
+  type RegisterForm,
+} from '../schemas';
+
+/** Puts the server's per-field messages under the fields they belong to. */
+function showFieldErrors<T extends FieldValues>(
+  form: UseFormReturn<T>,
+  err: unknown,
+  known: readonly string[],
+) {
+  const fields = fieldErrors(err, known);
+  if (!fields) return;
+  for (const [name, message] of Object.entries(fields)) {
+    form.setError(name as FieldPath<T>, { type: 'server', message });
+  }
+}
+
+export const EMAIL_TAKEN = 'An account with this email already exists.';
 
 /**
  * /login and /register render this same card; the route decides which face is up and flipping
@@ -21,7 +45,14 @@ export default function AuthPage() {
   const next = safeNext(params.get('next'));
   const navigate = useNavigate();
   const face: Face = location.pathname === '/register' ? 'back' : 'front';
-  const sessionEnded = (location.state as { reason?: string } | null)?.reason === 'session-ended';
+  const reason = (location.state as { reason?: string } | null)?.reason;
+  const notice =
+    reason === 'session-ended'
+      ? 'Your session ended, please log in again.'
+      : reason === 'password-reset'
+        ? 'Password changed. Log in with your new password.'
+        : null;
+  const [forgot, setForgot] = useState(() => params.get('forgot') === '1');
 
   const login = useLogin();
   const registerUser = useRegister();
@@ -34,10 +65,22 @@ export default function AuthPage() {
   };
 
   const submitLogin = loginForm.handleSubmit((values) =>
-    login.mutate(values, { onSuccess: afterAuth }),
+    login.mutate(values, {
+      onSuccess: afterAuth,
+      onError: (err) => showFieldErrors(loginForm, err, LOGIN_FIELDS),
+    }),
   );
   const submitSignup = signupForm.handleSubmit((values) =>
-    registerUser.mutate(values, { onSuccess: afterAuth }),
+    registerUser.mutate(values, {
+      onSuccess: afterAuth,
+      onError: (err) => {
+        if (toApiError(err).status === 409) {
+          signupForm.setError('email', { type: 'server', message: EMAIL_TAKEN });
+          return;
+        }
+        showFieldErrors(signupForm, err, REGISTER_FIELDS);
+      },
+    }),
   );
 
   const { setFocus: focusLogin } = loginForm;
@@ -64,63 +107,64 @@ export default function AuthPage() {
     }
     login.reset();
     registerUser.reset();
+    setForgot(false);
     void navigate(
       { pathname: goingToSignup ? '/register' : '/login', search: location.search },
       { replace: true },
     );
   };
 
-  return (
-    <div className="relative isolate min-h-[calc(100dvh-12rem)] flex items-center overflow-hidden">
-      {/* Behind the card on small screens; beside it from 1280px, where the caption joins it. */}
-      <div
-        aria-hidden="true"
-        className="map-fade pointer-events-none absolute inset-0 -z-10 opacity-40 xl:inset-y-0 xl:right-0 xl:left-auto xl:w-[62%] xl:opacity-100"
-      >
-        <AuthMap face={face} />
-      </div>
+  const caption = (
+    <p
+      key={face}
+      className="auth-caption pointer-events-none absolute top-16 left-[44%] hidden max-w-[26rem] font-display text-[2.75rem] leading-[0.95] font-extrabold xl:block"
+    >
+      {face === 'back' ? (
+        <>
+          <span className="block">You start at Basecamp.</span>
+          <span className="block">Eight ranks above you.</span>
+        </>
+      ) : (
+        <>
+          <span className="block">Your streak is waiting.</span>
+          <span className="block">So is your rank.</span>
+        </>
+      )}
+    </p>
+  );
 
-      <div className="mx-auto flex w-full max-w-[1240px] justify-center px-4 py-8 xl:justify-start xl:px-6">
-        <FlipCard
-          face={face}
-          front={
+  return (
+    <AuthStage face={face} caption={caption}>
+      <FlipCard
+        face={face}
+        front={
+          forgot ? (
+            <ForgotFace
+              initialEmail={loginForm.getValues('email') ?? ''}
+              onBack={() => setForgot(false)}
+            />
+          ) : (
             <LoginFace
               form={loginForm}
               onSubmit={submitLogin}
               pending={login.isPending}
               error={login.error}
-              sessionEnded={sessionEnded}
+              notice={notice}
               onFlip={flip}
+              onForgot={() => setForgot(true)}
             />
-          }
-          back={
-            <SignupFace
-              form={signupForm}
-              onSubmit={submitSignup}
-              pending={registerUser.isPending}
-              error={registerUser.error}
-              onFlip={flip}
-            />
-          }
-        />
-      </div>
-
-      <p
-        key={face}
-        className="auth-caption pointer-events-none absolute top-16 left-[44%] hidden max-w-[26rem] font-display text-[2.75rem] leading-[0.95] font-extrabold xl:block"
-      >
-        {face === 'back' ? (
-          <>
-            <span className="block">You start at Basecamp.</span>
-            <span className="block">Eight ranks above you.</span>
-          </>
-        ) : (
-          <>
-            <span className="block">Your streak is waiting.</span>
-            <span className="block">So is your rank.</span>
-          </>
-        )}
-      </p>
-    </div>
+          )
+        }
+        back={
+          <SignupFace
+            form={signupForm}
+            onSubmit={submitSignup}
+            pending={registerUser.isPending}
+            error={registerUser.error}
+            onFlip={flip}
+          />
+        }
+      />
+    </AuthStage>
   );
 }

@@ -1,10 +1,9 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import type { Role } from '@/lib/api/types';
 import { useAuthStore } from '@/lib/auth/authStore';
-import { profileStorage } from '@/lib/auth/profileStorage';
 import { tokenStorage } from '@/lib/auth/tokenStorage';
 import { makeAccessToken, renderRoutes } from '@/test/helpers';
 import { server } from '@/test/server';
@@ -110,14 +109,55 @@ describe('AuthPage: log in face', () => {
     return screen.findByText('Your session ended, please log in again.');
   });
 
-  it('has no forgot-password link, since the backend has no such endpoint', () => {
+  it('opens the reset view with the typed email and answers the same way for any address', async () => {
+    let body: unknown;
+    server.use(
+      http.post('*/auth/forgot', async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json(
+          { message: 'If an account exists for that email, a reset link has been sent.' },
+          { status: 202 },
+        );
+      }),
+    );
     renderRoutes(routes, '/login');
-    expect(screen.queryByText(/forgot/i)).not.toBeInTheDocument();
+    await userEvent.type(loginFace().getByLabelText('Email'), 'ada@example.com');
+    await userEvent.click(loginFace().getByRole('button', { name: 'Forgot password?' }));
+
+    const reset = within(screen.getByRole('region', { name: 'Reset your password' }));
+    expect(reset.getByLabelText('Email')).toHaveValue('ada@example.com');
+    await userEvent.click(reset.getByRole('button', { name: 'Send reset link' }));
+
+    expect(await reset.findByRole('status')).toHaveTextContent(
+      'If an account exists for ada@example.com, a reset link is on its way. It works for 30 minutes.',
+    );
+    expect(body).toEqual({ email: 'ada@example.com' });
+
+    await userEvent.click(reset.getByRole('button', { name: 'Back to log in' }));
+    expect(loginFace().getByLabelText('Email')).toBeInTheDocument();
+  });
+
+  it('opens the reset view straight away from ?forgot=1 (the "request a new link" target)', () => {
+    renderRoutes(routes, '/login?forgot=1');
+    expect(screen.getByRole('region', { name: 'Reset your password' })).toBeInTheDocument();
+  });
+
+  it('checks the email before asking the server', async () => {
+    renderRoutes(routes, '/login?forgot=1');
+    const reset = within(screen.getByRole('region', { name: 'Reset your password' }));
+    await userEvent.click(reset.getByRole('button', { name: 'Send reset link' }));
+    expect(await reset.findByText('Enter a valid email address')).toBeInTheDocument();
+  });
+
+  it('says so after a password was changed', () => {
+    const { router } = renderRoutes(routes, '/login');
+    void router.navigate('/login', { state: { reason: 'password-reset' }, replace: true });
+    return screen.findByText('Password changed. Log in with your new password.');
   });
 });
 
 describe('AuthPage: sign up face', () => {
-  it('signs up, lands on /app and remembers the first name for this user only', async () => {
+  it('signs up and lands on /app', async () => {
     server.use(
       http.post('*/auth/register', () =>
         HttpResponse.json({
@@ -130,10 +170,10 @@ describe('AuthPage: sign up face', () => {
     await fillSignup();
 
     expect(await screen.findByText('user home')).toBeInTheDocument();
-    expect(profileStorage.get()).toEqual({ userId: 12, firstName: 'Ada' });
+    expect(useAuthStore.getState().user).toEqual({ id: 12, role: 'USER' });
   });
 
-  it('shows the server message and stores nothing when sign-up fails', async () => {
+  it('shows the server message and stays signed out when sign-up fails', async () => {
     server.use(
       http.post('*/auth/register', () =>
         HttpResponse.json({ detail: 'Too many attempts' }, { status: 429 }),
@@ -143,21 +183,55 @@ describe('AuthPage: sign up face', () => {
     await fillSignup();
 
     expect(await signupFace().findByRole('alert')).toHaveTextContent('Too many attempts');
-    expect(profileStorage.get()).toBeNull();
+    expect(useAuthStore.getState().user).toBeNull();
     expect(router.state.location.pathname).toBe('/register');
   });
 
-  it('reads a bare 500 as a possible duplicate email and offers to log in instead', async () => {
-    server.use(http.post('*/auth/register', () => new HttpResponse(null, { status: 500 })));
+  it('puts a duplicate email under the Email field and offers to log in instead', async () => {
+    server.use(
+      http.post('*/auth/register', () =>
+        HttpResponse.json({ status: 409, detail: 'Email already registered' }, { status: 409 }),
+      ),
+    );
     renderRoutes(routes, '/register');
     await fillSignup();
 
-    expect(await signupFace().findByRole('alert')).toHaveTextContent(
-      'If this email is already registered, log in instead.',
-    );
+    expect(
+      await signupFace().findByText('An account with this email already exists.'),
+    ).toBeVisible();
+    expect(signupFace().getAllByRole('alert')).toHaveLength(1); // only the field message
     await userEvent.click(signupFace().getByRole('button', { name: 'Log in instead' }));
 
     expect(loginFace().getByLabelText('Email')).toHaveValue('ada@example.com');
+  });
+
+  it("shows the server's per-field messages under each field, not above the form", async () => {
+    server.use(
+      http.post('*/auth/register', () =>
+        HttpResponse.json(
+          {
+            status: 400,
+            detail: 'email should be formatted and required; password is required',
+            errors: {
+              email: 'email should be formatted and required',
+              password: 'password is required',
+            },
+          },
+          { status: 400 },
+        ),
+      ),
+    );
+    renderRoutes(routes, '/register');
+    await fillSignup();
+
+    const email = signupFace().getByLabelText('Email');
+    await waitFor(() => expect(email).toHaveAccessibleDescription(/should be formatted/));
+    expect(signupFace().getByLabelText('Password')).toHaveAccessibleDescription(
+      'password is required',
+    );
+    expect(email).toBeInvalid();
+    // the joined `detail` is not repeated as a second, form-level message
+    expect(signupFace().queryByText(/email should be formatted and required; password/)).toBeNull();
   });
 
   it('hints at password strength without blocking the form', async () => {

@@ -2,16 +2,18 @@ import type { UseFormReturn } from 'react-hook-form';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
-import { getErrorMessage } from '@/lib/api/errors';
-import type { LoginForm } from '../schemas';
+import { fieldErrors, getErrorMessage } from '@/lib/api/errors';
+import { LOGIN_FIELDS, type LoginForm } from '../schemas';
 
 type LoginFaceProps = {
   form: UseFormReturn<LoginForm>;
   onSubmit: React.FormEventHandler<HTMLFormElement>;
   pending: boolean;
   error: unknown;
-  sessionEnded: boolean;
+  /** A line shown above the form, e.g. why the user is here. */
+  notice: string | null;
   onFlip: () => void;
+  onForgot: () => void;
 };
 
 export function LoginFace({
@@ -19,8 +21,9 @@ export function LoginFace({
   onSubmit,
   pending,
   error,
-  sessionEnded,
+  notice,
   onFlip,
+  onForgot,
 }: LoginFaceProps) {
   const {
     register,
@@ -36,17 +39,17 @@ export function LoginFace({
         <p className="text-soft">Log in to keep your streak alive.</p>
       </div>
 
-      {sessionEnded && (
+      {notice && (
         <p
           role="status"
           className="rounded-xl border border-line-strong bg-surface-2 px-3.5 py-3 text-sm"
         >
-          Your session ended, please log in again.
+          {notice}
         </p>
       )}
 
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
-        {error != null && (
+        {error != null && !fieldErrors(error, LOGIN_FIELDS) && (
           <p role="alert" className="text-sm text-danger">
             {getErrorMessage(error)}
           </p>
@@ -64,6 +67,13 @@ export function LoginFace({
           error={errors.password?.message}
           {...register('password')}
         />
+        <button
+          type="button"
+          onClick={onForgot}
+          className="-mt-2 self-start text-sm font-medium text-accent hover:underline"
+        >
+          Forgot password?
+        </button>
         <Button type="submit" size="lg" loading={pending} className="rounded-full">
           Log in
         </Button>

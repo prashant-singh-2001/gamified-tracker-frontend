@@ -1,7 +1,13 @@
 /**
- * Leaderboard rows only carry a `userId` (no display name yet), so people are shown as
- * "Climber #4821" and the current user as "You". Swap this out once the API returns names.
+ * How a climber appears on a board: "You" for the signed-in user, otherwise the name the API
+ * sends (first name plus last initial), falling back to "Climber #4821" when it has none.
  */
-export function displayName(userId: number, currentUserId?: number | null): string {
-  return userId === currentUserId ? 'You' : `Climber #${userId}`;
+export function displayName(
+  userId: number,
+  currentUserId?: number | null,
+  name?: string | null,
+): string {
+  if (userId === currentUserId) return 'You';
+  const trimmed = name?.trim();
+  return trimmed ? trimmed : `Climber #${userId}`;
 }

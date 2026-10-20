@@ -24,7 +24,9 @@
 
   --font-display: 'Sofia Sans Extra Condensed', 'Arial Narrow', system-ui, sans-serif;
   --font-body: 'Newsreader', Georgia, serif;
-  --font-mono: var(--font-display);
+  /* Small data labels use the text face with lining, tabular figures; the condensed display face
+     is too narrow to read at 12px. */
+  --font-mono: var(--font-body);
 
   /* The logo mark keeps its brand colours on every theme. */
   --logo-bg: #c8f25a;
@@ -41,4 +43,32 @@
 .theme-survey .logo-word {
   font-size: 1.7rem;
   line-height: 1;
+}
+
+.theme-survey .font-mono {
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+/*
+ * An ink panel inside the sheet (Home's Log card): the same tokens, flipped, so everything inside
+ * it uses the normal classes and still reads. The accent is a lighter magenta that holds up on ink.
+ */
+.theme-survey .panel-ink {
+  --bg: #0e1b26;
+  --surface: #15283a;
+  --surface-2: #1b3246;
+  --line: #27404f;
+  --line-strong: #3a5667;
+  --text: #e9eeef;
+  --text-soft: #c3d0d6;
+  --text-muted: #9db0b9;
+  --text-faint: #8397a2;
+  --accent: #ff5c99;
+  --accent-ink: #0e1b26;
+  --xp: #ffb547;
+  --streak: #ff8a3d;
+  --pending: #b4bcc9;
+  color-scheme: dark;
+  background: var(--bg);
+  color: var(--text);
 }

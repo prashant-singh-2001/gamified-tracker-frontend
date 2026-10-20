@@ -85,7 +85,7 @@ function week(overrides: Partial<WeeklyReport> = {}): WeeklyReport {
 type Mocks = {
   logs?: ActivityLogResponse[];
   catalog?: CatalogActivity[];
-  rank?: RankCard | null; // null → 404
+  rank?: RankCard | null | 'unranked-200'; // null → 404
   myBoard?: RankTierMember[];
   streaks?: Streak[];
   weekly?: WeeklyReport;
@@ -98,8 +98,31 @@ type Mocks = {
 function mockHome(m: Mocks = {}) {
   const tierRequests: string[] = [];
   const tierSizes: string[] = [];
+  const recentLimits: string[] = [];
   server.use(
     http.get('*/api/activitylog/user/:id', () => HttpResponse.json(m.logs ?? [])),
+    http.get('*/api/activitylog/user/:id/recent', ({ request }) => {
+      const limit = new URL(request.url).searchParams.get('limit') ?? '';
+      recentLimits.push(limit);
+      const counts = new Map<string, { n: number; log: ActivityLogResponse }>();
+      for (const l of m.logs ?? []) {
+        if (!l.activity.active) continue;
+        const hit = counts.get(l.activity.name) ?? { n: 0, log: l };
+        counts.set(l.activity.name, { n: hit.n + 1, log: l });
+      }
+      return HttpResponse.json(
+        [...counts.values()]
+          .sort((a, b) => b.n - a.n)
+          .slice(0, Number(limit))
+          .map(({ n, log: l }) => ({
+            activityId: l.activity.id,
+            name: l.activity.name,
+            category: l.activity.category,
+            timesLogged: n,
+            lastUsedAt: l.startTime,
+          })),
+      );
+    }),
     http.get('*/api/activity/', () => HttpResponse.json(m.catalog ?? [])),
     http.get('*/api/ranks/me/leaderboard', () => HttpResponse.json(m.myBoard ?? [])),
     http.get('*/api/ranks/:tier/leaderboard', ({ params, request }) => {
@@ -116,14 +139,16 @@ function mockHome(m: Mocks = {}) {
     http.get('*/api/ranks/me', () =>
       m.rank === null
         ? HttpResponse.json({ detail: 'No rank yet for userId: 7' }, { status: 404 })
-        : HttpResponse.json(m.rank ?? rankCard),
+        : m.rank === 'unranked-200'
+          ? HttpResponse.json({ ranked: false })
+          : HttpResponse.json(m.rank ?? rankCard),
     ),
     http.get('*/api/activitylog/streaks/user/:id', () => HttpResponse.json(m.streaks ?? [])),
     http.get('*/api/activitylog/analytics/user/:id/weekly-report', () =>
       HttpResponse.json(m.weekly ?? week()),
     ),
   );
-  return { tierRequests, tierSizes };
+  return { tierRequests, tierSizes, recentLimits };
 }
 
 function renderHome() {
@@ -162,6 +187,7 @@ describe('Home — Log card quick picks', () => {
 
   it('falls back to active catalog entries for a brand-new user', async () => {
     const entry = (name: string, active: boolean): CatalogActivity => ({
+      id: name.length,
       name,
       category: 'STUDY',
       xpMultiplier: 0,
@@ -236,6 +262,166 @@ describe('Home — rank cards', () => {
       'href',
       '/app/log',
     );
+  });
+});
+
+describe('Home — route hero', () => {
+  it('puts a marker on the route for a ranked climber, with the map kept decorative', async () => {
+    mockHome({});
+    renderHome();
+
+    const marker = await screen.findByTestId('you-marker');
+    expect(marker.closest('[aria-hidden="true"]')).not.toBeNull();
+    expect(marker).toHaveTextContent('You');
+  });
+
+  it('draws the route without a marker for someone who is not ranked yet', async () => {
+    mockHome({ rank: null });
+    renderHome();
+
+    await screen.findByText("You're not ranked yet");
+    expect(screen.queryByTestId('you-marker')).not.toBeInTheDocument();
+  });
+
+  it("shows today's numbers in the hero rather than in the Log card", async () => {
+    mockHome({});
+    renderHome();
+
+    const today = await screen.findByRole('region', { name: 'Today' });
+    const hero = screen.getByRole('region', { name: 'Alpine' });
+    expect(hero).toContainElement(today);
+    expect(screen.getByRole('region', { name: 'What did you do?' })).not.toContainElement(today);
+  });
+
+  it('explains an empty Around you panel to an unranked user', async () => {
+    mockHome({ rank: null });
+    renderHome();
+
+    expect(
+      await screen.findByText('Once you are ranked, the climbers next to you show up here.'),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('Home — rank data from the API', () => {
+  it('asks for the rank with allowUnranked, and reads {"ranked": false} as not ranked', async () => {
+    let asked = '';
+    mockHome({ rank: 'unranked-200' });
+    server.use(
+      http.get('*/api/ranks/me', ({ request }) => {
+        asked = new URL(request.url).search;
+        return HttpResponse.json({ ranked: false });
+      }),
+    );
+    renderHome();
+
+    expect(await screen.findByText("You're not ranked yet")).toBeInTheDocument();
+    expect(asked).toBe('?allowUnranked=true');
+  });
+
+  it('shows how much XP the next tier is away, naming the tier the API chose', async () => {
+    mockHome({
+      rank: { ...rankCard, tierCutoffXp: 1000, nextTier: 'PEAK', xpToNextTier: 2492.8 },
+    });
+    renderHome();
+
+    expect(await screen.findByText('2,493 XP to Peak')).toBeInTheDocument();
+  });
+
+  it('says Top tier at the top, where there is nothing further to climb', async () => {
+    mockHome({
+      rank: { ...rankCard, tier: 'SUMMIT', percentile: 0, nextTier: null, xpToNextTier: null },
+    });
+    renderHome();
+
+    expect(await screen.findByText('Top tier')).toBeInTheDocument();
+  });
+
+  it('shows the names the API sends, and falls back to a number when there is none', async () => {
+    mockHome({
+      rank: rankCard,
+      myBoard: [
+        { ...members(1)[0]!, userId: 301, displayName: 'Ada L.' },
+        { ...members(2)[1]!, userId: 302, displayName: null },
+        { ...members(3)[2]!, userId: ME, displayName: 'Prashant S.' },
+      ].map((m, i) => ({ ...m, withinRankPosition: i + 1 })),
+    });
+    renderHome();
+
+    const table = await screen.findByRole('table', { name: /around your position/i });
+    expect(within(table).getByText('Ada L.')).toBeInTheDocument();
+    expect(within(table).getByText('Climber #302')).toBeInTheDocument();
+    // the signed-in user is always "You", whatever name the API has
+    expect(within(table).getByText('You')).toBeInTheDocument();
+    expect(within(table).queryByText('Prashant S.')).not.toBeInTheDocument();
+  });
+});
+
+describe('Home — data from the backend', () => {
+  it('asks the server for four quick picks', async () => {
+    const { recentLimits } = mockHome({ logs: [log(1, 'Running', 'HEALTH')] });
+    renderHome();
+
+    await screen.findByRole('link', { name: 'Running' });
+    expect(recentLimits).toEqual(['4']);
+  });
+
+  it('names a live streak from the catalog, even when the activity was never logged here', async () => {
+    mockHome({
+      catalog: [
+        {
+          id: 10,
+          name: 'Deep Work',
+          category: 'WORK',
+          xpMultiplier: 1.5,
+          active: true,
+          description: null,
+          createdAt: '2026-10-01T00:00:00',
+        },
+      ],
+      streaks: [
+        {
+          activityId: 10,
+          currentStreak: 5,
+          longestStreak: 5,
+          lastActivityDate: utcDay(0),
+          active: true,
+        },
+      ],
+    });
+    renderHome();
+
+    const list = await screen.findByRole('list', { name: 'Active streaks' });
+    expect(within(list).getByText('Deep Work')).toBeInTheDocument();
+  });
+
+  it('asks for the Monday-to-Sunday week', async () => {
+    let query = '';
+    mockHome({});
+    server.use(
+      http.get('*/api/activitylog/analytics/user/:id/weekly-report', ({ request }) => {
+        query = new URL(request.url).search;
+        return HttpResponse.json(week());
+      }),
+    );
+    renderHome();
+
+    await screen.findByText('Monday to Sunday');
+    expect(query).toBe('?mode=calendar');
+  });
+
+  it('draws days after today as empty columns, not as zero-XP days', async () => {
+    const days = Array.from({ length: 7 }, (_, i) => ({
+      date: utcDay(2 - i), // two days ago ... four days ahead
+      totalXpEarned: i <= 2 ? 100 : 0,
+      totalDurationMinutes: i <= 2 ? 30 : 0,
+    }));
+    mockHome({ weekly: week({ dailyBreakdown: days }) });
+    renderHome();
+
+    const strip = await screen.findAllByRole('listitem', { name: /not yet/ });
+    expect(strip).toHaveLength(4);
+    expect(screen.getAllByRole('listitem', { name: /: 100 XP/ })).toHaveLength(3);
   });
 });
 
@@ -324,7 +510,7 @@ describe('Home — this week', () => {
 
     expect(await screen.findByText('560 XP')).toBeInTheDocument();
     expect(screen.getByText(/12%/)).toBeInTheDocument();
-    expect(screen.getByText(/up on last week/)).toBeInTheDocument();
+    expect(screen.getByText(/up on the same days last week/)).toBeInTheDocument();
     const strip = screen
       .getAllByRole('listitem')
       .filter((li) => li.getAttribute('aria-label')?.includes('XP'));
@@ -336,9 +522,27 @@ describe('Home — this week', () => {
     mockHome({
       logs,
       streaks: [
-        { activityId: 10, currentStreak: 6, longestStreak: 9, lastActivityDate: yesterday() },
-        { activityId: 20, currentStreak: 3, longestStreak: 3, lastActivityDate: today() },
-        { activityId: 30, currentStreak: 12, longestStreak: 12, lastActivityDate: utcDay(5) }, // stale
+        {
+          activityId: 10,
+          currentStreak: 6,
+          longestStreak: 9,
+          lastActivityDate: yesterday(),
+          active: true,
+        },
+        {
+          activityId: 20,
+          currentStreak: 3,
+          longestStreak: 3,
+          lastActivityDate: today(),
+          active: true,
+        },
+        {
+          activityId: 30,
+          currentStreak: 12,
+          longestStreak: 12,
+          lastActivityDate: utcDay(5),
+          active: false,
+        }, // stale
       ],
     });
     renderHome();
@@ -380,9 +584,27 @@ describe('Home — today at a glance', () => {
   it("shows today's XP and minutes from the weekly report and my best live streak", async () => {
     mockHome({
       streaks: [
-        { activityId: 10, currentStreak: 6, longestStreak: 9, lastActivityDate: utcDay(0) },
-        { activityId: 20, currentStreak: 3, longestStreak: 3, lastActivityDate: utcDay(1) },
-        { activityId: 30, currentStreak: 20, longestStreak: 20, lastActivityDate: utcDay(9) }, // dead
+        {
+          activityId: 10,
+          currentStreak: 6,
+          longestStreak: 9,
+          lastActivityDate: utcDay(0),
+          active: true,
+        },
+        {
+          activityId: 20,
+          currentStreak: 3,
+          longestStreak: 3,
+          lastActivityDate: utcDay(1),
+          active: true,
+        },
+        {
+          activityId: 30,
+          currentStreak: 20,
+          longestStreak: 20,
+          lastActivityDate: utcDay(9),
+          active: false,
+        }, // dead
       ],
     });
     renderHome();

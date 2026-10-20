@@ -12,7 +12,7 @@ export default function PublicLayout() {
   const onAuthCard = pathname === '/login' || pathname === '/register';
   // The landing page and the sign-in card share the survey-sheet look (theme-survey.css); the 404
   // page keeps the app theme.
-  const surveyTheme = pathname === '/' || onAuthCard;
+  const surveyTheme = pathname === '/' || onAuthCard || pathname === '/reset-password';
 
   return (
     <div className={cn('flex min-h-screen flex-col', surveyTheme && 'theme-survey')}>

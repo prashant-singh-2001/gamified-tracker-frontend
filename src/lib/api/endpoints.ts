@@ -9,6 +9,11 @@ export const endpoints = {
     register: '/auth/register',
     login: '/auth/login',
     refresh: '/auth/refresh',
+    forgot: '/auth/forgot',
+    reset: '/auth/reset',
+  },
+  users: {
+    me: '/users/me',
   },
   activities: {
     list: `${API}/activity/`,
@@ -19,6 +24,8 @@ export const endpoints = {
     natural: `${API}/activitylog/natural`,
     byUser: (userId: number) => `${API}/activitylog/user/${userId}`,
     byId: (logId: number | string) => `${API}/activitylog/${logId}`,
+    outcome: (logId: number | string) => `${API}/activitylog/${logId}/outcome`,
+    recent: (userId: number) => `${API}/activitylog/user/${userId}/recent`,
     streaks: (userId: number) => `${API}/activitylog/streaks/user/${userId}`,
     flagged: `${API}/activitylog/review/flagged`,
     approve: (logId: number | string) => `${API}/activitylog/review/${logId}/approve`,

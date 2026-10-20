@@ -2,8 +2,8 @@ import { useWatch, type UseFormReturn } from 'react-hook-form';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
-import { toApiError } from '@/lib/api/errors';
-import type { RegisterForm } from '../schemas';
+import { fieldErrors, toApiError } from '@/lib/api/errors';
+import { REGISTER_FIELDS, type RegisterForm } from '../schemas';
 
 type SignupFaceProps = {
   form: UseFormReturn<RegisterForm>;
@@ -13,13 +13,6 @@ type SignupFaceProps = {
   onFlip: () => void;
 };
 
-/**
- * The gateway answers a duplicate email with a bare 500 (unique-constraint violation, no handler),
- * so a 500 on sign-up is read as "this email may already exist" and offers the way out.
- */
-const DUPLICATE_HINT =
-  "We couldn't create your account. If this email is already registered, log in instead.";
-
 export function SignupFace({ form, onSubmit, pending, error, onFlip }: SignupFaceProps) {
   const {
     register,
@@ -28,7 +21,10 @@ export function SignupFace({ form, onSubmit, pending, error, onFlip }: SignupFac
   } = form;
   const password = useWatch({ control, name: 'password' });
   const apiError = error == null ? null : toApiError(error);
-  const maybeDuplicate = apiError?.status === 500;
+  const emailTaken = apiError?.status === 409;
+  // A server message that a field shows (or the duplicate-email case) is not repeated above the form.
+  const formError =
+    apiError && !emailTaken && !fieldErrors(error, REGISTER_FIELDS) ? apiError : null;
 
   return (
     <section aria-labelledby="signup-title" className="flex flex-col gap-5">
@@ -40,19 +36,10 @@ export function SignupFace({ form, onSubmit, pending, error, onFlip }: SignupFac
       </div>
 
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
-        {apiError && (
-          <div role="alert" className="flex flex-col items-start gap-2 text-sm text-danger">
-            <p>{maybeDuplicate ? DUPLICATE_HINT : apiError.message}</p>
-            {maybeDuplicate && (
-              <button
-                type="button"
-                onClick={onFlip}
-                className="font-medium text-accent hover:underline"
-              >
-                Log in instead
-              </button>
-            )}
-          </div>
+        {formError && (
+          <p role="alert" className="text-sm text-danger">
+            {formError.message}
+          </p>
         )}
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
@@ -75,6 +62,15 @@ export function SignupFace({ form, onSubmit, pending, error, onFlip }: SignupFac
           error={errors.email?.message}
           {...register('email')}
         />
+        {emailTaken && (
+          <button
+            type="button"
+            onClick={onFlip}
+            className="-mt-2 self-start font-medium text-accent hover:underline"
+          >
+            Log in instead
+          </button>
+        )}
         <PasswordInput
           label="Password"
           autoComplete="new-password"

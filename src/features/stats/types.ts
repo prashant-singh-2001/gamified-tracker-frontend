@@ -8,8 +8,9 @@ export type DailyXp = {
 };
 
 /**
- * `GET /api/activitylog/analytics/user/{userId}/weekly-report`.
- * The "week" is a rolling 7 days ending today (UTC), oldest first — not Mon–Sun.
+ * `GET /api/activitylog/analytics/user/{userId}/weekly-report?mode=calendar`.
+ * Monday to Sunday (UTC), always seven days: days after today are present with zero XP. The change
+ * compares the same weekdays of the previous week.
  */
 export type WeeklyReport = {
   currentWeekXp: number;
@@ -18,4 +19,10 @@ export type WeeklyReport = {
   totalActiveMinutes: number;
   topCategory: Category | null;
   dailyBreakdown: DailyXp[];
+  mode?: 'ROLLING' | 'CALENDAR';
+  /** First and last day shown, and the window `previousWeekXp` covers (`YYYY-MM-DD`). */
+  periodStart?: string;
+  periodEnd?: string;
+  previousPeriodStart?: string;
+  previousPeriodEnd?: string;
 };
