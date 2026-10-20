@@ -134,10 +134,17 @@ export function TierMountain() {
                     />
                   )}
                 </span>
-                <span className="w-24 shrink-0 text-right text-[15px] text-soft">
-                  {count === 0
-                    ? 'Nobody yet'
-                    : `${formatNumber(count)} ${count === 1 ? 'climber' : 'climbers'}`}
+                <span className="w-16 shrink-0 text-right text-[15px] text-soft sm:w-24">
+                  {count === 0 ? (
+                    'Nobody yet'
+                  ) : (
+                    <>
+                      {formatNumber(count)}
+                      <span className="sr-only sm:not-sr-only">
+                        {count === 1 ? ' climber' : ' climbers'}
+                      </span>
+                    </>
+                  )}
                 </span>
               </Link>
             </li>
