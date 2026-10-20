@@ -1,0 +1,41 @@
+/*
+ * "Survey sheet" theme for the public landing page: glacier paper, crevasse ink and one route-magenta
+ * signal colour. It overrides the same tokens the app uses, so shared pieces (header, buttons, logo)
+ * follow it without changes. Applied by PublicLayout on "/" only.
+ */
+.theme-survey {
+  --bg: #e9eeef;
+  --surface: #f6f9f9;
+  --surface-2: #dce4e6;
+  --line: #c6d2d6;
+  --line-strong: #a9b9bf;
+
+  --text: #0e1b26;
+  --text-soft: #34444f;
+  --text-muted: #4a5b66;
+  --text-faint: #5c6c77;
+
+  --accent: #d61f69;
+  --accent-ink: #ffffff;
+  --danger: #b3261e;
+
+  --font-display: 'Sofia Sans Extra Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --font-body: 'Newsreader', Georgia, serif;
+  --font-mono: var(--font-display);
+
+  /* The logo mark keeps its brand colours on every theme. */
+  --logo-bg: #c8f25a;
+  --logo-ink: #0d0f14;
+  --logo-ring: rgb(14 27 38 / 0.18);
+
+  color-scheme: light;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+}
+
+/* The condensed display face reads small at the app's wordmark size. */
+.theme-survey .logo-word {
+  font-size: 1.7rem;
+  line-height: 1;
+}

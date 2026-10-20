@@ -32,8 +32,11 @@ const routes: RouteObject[] = [
               { path: '/', ...page(() => import('@/features/landing/pages/LandingPage')) },
             ],
           },
-          { path: '/login', ...page(() => import('@/features/auth/pages/LoginPage')) },
-          { path: '/register', ...page(() => import('@/features/auth/pages/RegisterPage')) },
+          {
+            // One card, two faces: the route decides which face is up.
+            ...page(() => import('@/features/auth/pages/AuthPage')),
+            children: [{ path: '/login' }, { path: '/register' }],
+          },
         ],
       },
       {
@@ -124,5 +127,8 @@ export const router = createBrowserRouter(routes);
 setSessionExpiredHandler(() => {
   const { pathname, search } = window.location;
   if (pathname === '/login' || pathname === '/register') return;
-  void router.navigate(loginUrl(pathname + search), { replace: true });
+  void router.navigate(loginUrl(pathname + search), {
+    replace: true,
+    state: { reason: 'session-ended' },
+  });
 });
