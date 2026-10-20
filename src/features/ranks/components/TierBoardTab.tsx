@@ -8,6 +8,7 @@ import { getTierInfo, RANK_TIERS, type RankTier } from '@/lib/api/types';
 import { useUserId } from '@/lib/auth/useUserId';
 import { cn } from '@/lib/utils/cn';
 import { useMyRank, useMyTierBoard, useTierBoardPages } from '../api';
+import { movementOf, stepLabel } from '../steps';
 import { useOwnRowVisible } from '../useOwnRowVisible';
 import { PinnedYou } from './PinnedYou';
 
@@ -45,6 +46,11 @@ export function TierBoardTab({ tier }: { tier: RankTier }) {
                 : 'border-line-strong text-soft hover:text-text',
             )}
           >
+            <span
+              aria-hidden="true"
+              className="size-2.5 rounded-full border border-current/60"
+              style={{ background: `var(--tier-${t.order})` }}
+            />
             {t.label}
             {mine?.tier === t.id && (
               <>
@@ -83,6 +89,10 @@ export function TierBoardTab({ tier }: { tier: RankTier }) {
               totalXp: m.totalXp,
               level: m.overallLevel,
               name: m.displayName,
+              tier: m.tier,
+              division: m.division,
+              score: m.rankScore,
+              movement: movementOf(m),
             }))}
             currentUserId={userId}
             caption={`${info.label} tier`}
@@ -105,8 +115,9 @@ export function TierBoardTab({ tier }: { tier: RankTier }) {
       {pinned && !ownVisible && (
         <PinnedYou
           position={pinned.withinRankPosition}
-          xp={pinned.totalXp}
+          xp={pinned.rankScore ?? pinned.totalXp}
           level={pinned.overallLevel}
+          step={pinned.division ? stepLabel(pinned.tier, pinned.division) : undefined}
         />
       )}
     </div>

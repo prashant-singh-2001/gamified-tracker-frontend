@@ -1,5 +1,9 @@
 import type { Ref } from 'react';
 import { User } from 'lucide-react';
+import { DivisionSteps } from '@/features/ranks/components/DivisionSteps';
+import { MovementChip } from '@/features/ranks/components/MovementChip';
+import { roman, type Movement } from '@/features/ranks/steps';
+import type { Division, RankTier } from '@/lib/api/types';
 import { cn } from '@/lib/utils/cn';
 import { formatNumber } from '@/lib/utils/format';
 import { displayName } from '@/lib/utils/names';
@@ -14,6 +18,13 @@ export type LeaderboardRow = {
   name?: string | null;
   /** Shown as a "Lv" column when any row has one. */
   level?: number;
+  /** With `division`, adds a Step column of three stairs and a roman numeral. */
+  tier?: RankTier;
+  division?: Division;
+  /** Recent-form score; when a row has one it replaces lifetime XP in the last column. */
+  score?: number;
+  /** Adds a Movement column. */
+  movement?: Movement | null;
 };
 
 type LeaderboardTableProps = {
@@ -41,6 +52,9 @@ export function LeaderboardTable({
   className,
 }: LeaderboardTableProps) {
   const hasLevel = rows.some((r) => r.level !== undefined);
+  const hasStep = rows.some((r) => r.division !== undefined && r.tier !== undefined);
+  const hasMovement = rows.some((r) => r.movement);
+  const hasScore = rows.some((r) => r.score !== undefined);
 
   return (
     <div
@@ -53,8 +67,10 @@ export function LeaderboardTable({
           <tr>
             <th scope="col">Position</th>
             <th scope="col">Player</th>
+            {hasStep && <th scope="col">Division</th>}
             {hasLevel && <th scope="col">Level</th>}
-            <th scope="col">XP</th>
+            {hasMovement && <th scope="col">Movement</th>}
+            <th scope="col">{hasScore ? 'Score' : 'XP'}</th>
           </tr>
         </thead>
         <tbody>
@@ -86,13 +102,28 @@ export function LeaderboardTable({
                     </span>
                   </span>
                 </td>
+                {hasStep && (
+                  <td className="py-1.5 pr-3 whitespace-nowrap">
+                    {row.division !== undefined && row.tier !== undefined && (
+                      <span className="flex items-center justify-end gap-1.5 font-mono text-sm text-muted">
+                        <DivisionSteps tier={row.tier} division={row.division} width={22} />
+                        {roman(row.division)}
+                      </span>
+                    )}
+                  </td>
+                )}
                 {hasLevel && (
                   <td className="py-1.5 pr-3 text-right whitespace-nowrap font-mono text-sm text-muted">
                     {row.level !== undefined ? `Lv ${row.level}` : ''}
                   </td>
                 )}
+                {hasMovement && (
+                  <td className="py-1.5 pr-3 text-right whitespace-nowrap">
+                    {row.movement && <MovementChip movement={row.movement} variant="row" />}
+                  </td>
+                )}
                 <td className="py-1.5 pr-2 text-right whitespace-nowrap font-mono text-sm font-bold text-xp">
-                  {formatNumber(Math.round(row.totalXp))}
+                  {formatNumber(Math.round(row.score ?? row.totalXp))}
                 </td>
               </tr>
             );

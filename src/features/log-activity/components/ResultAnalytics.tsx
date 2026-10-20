@@ -6,10 +6,9 @@ import { StreakPill } from '@/components/ui/StreakPill';
 import { WeekStrip } from '@/components/ui/WeekStrip';
 import { useStreaks } from '@/features/activities/api';
 import { isStreakAlive } from '@/features/activities/streaks';
-import { useMyRank } from '@/features/ranks/api';
+import { RankMoment } from '@/features/ranks/components/RankMoment';
 import { useWeeklyReport } from '@/features/stats/api';
-import { getTierInfo } from '@/lib/api/types';
-import { formatNumber, formatXp } from '@/lib/utils/format';
+import { formatXp } from '@/lib/utils/format';
 import type { ActivityLogResponse } from '../types';
 
 const moreLink =
@@ -77,38 +76,6 @@ function WeekCard({ addedXp }: { addedXp: number }) {
   );
 }
 
-function RankCard() {
-  const rank = useMyRank();
-  return (
-    <Card className="flex flex-col gap-2 p-4">
-      <h2 className="text-sm text-muted">Rank</h2>
-      {rank.isPending ? (
-        <Skeleton className="h-8 w-40" />
-      ) : rank.data ? (
-        <p className="font-bold">
-          <span className="text-rank">{getTierInfo(rank.data.tier).label}</span>
-          <span className="font-mono text-soft">
-            {' '}
-            · #{formatNumber(rank.data.position)} of {formatNumber(rank.data.totalUsers)}
-          </span>
-        </p>
-      ) : (
-        <p className="text-soft">You&apos;ll be ranked after the next rank update.</p>
-      )}
-      {rank.data?.nextTier && rank.data.xpToNextTier != null && (
-        <p className="text-sm text-soft">
-          {formatNumber(Math.ceil(rank.data.xpToNextTier))} XP to{' '}
-          {getTierInfo(rank.data.nextTier).label}
-        </p>
-      )}
-      <p className="text-sm text-muted">Rank updates every few minutes.</p>
-      <Link to="/app/ranks" className={moreLink}>
-        Ranks &amp; leaderboards <ArrowRight className="size-4" aria-hidden="true" />
-      </Link>
-    </Card>
-  );
-}
-
 /** Streak, this week and rank, each one tap from its full screen. */
 export function ResultAnalytics({ log }: { log: ActivityLogResponse }) {
   const awarded = log.reviewStatus === 'CLEARED' || log.reviewStatus === 'APPROVED';
@@ -117,7 +84,7 @@ export function ResultAnalytics({ log }: { log: ActivityLogResponse }) {
       <StreakCard log={log} />
       <WeekCard addedXp={awarded ? log.xpEarned : 0} />
       <div className="sm:col-span-2">
-        <RankCard />
+        <RankMoment />
       </div>
     </section>
   );
