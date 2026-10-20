@@ -11,6 +11,7 @@ const routes = [
     children: [
       { path: '/', element: <LandingPage /> },
       { path: '/login', element: <p>login page</p> },
+      { path: '*', element: <p>not found</p> },
     ],
   },
 ];
@@ -53,13 +54,15 @@ describe('LandingPage', () => {
     expect(cells.at(-1)).toBe('Gaming×0.5');
   });
 
-  it('wears the survey theme on the landing page only', () => {
-    const { container, router, unmount } = renderRoutes(routes, '/');
-    expect(container.querySelector('.theme-survey')).not.toBeNull();
-    unmount();
-
-    const other = renderRoutes(routes, '/login');
-    expect(other.container.querySelector('.theme-survey')).toBeNull();
-    expect(router).toBeDefined();
+  it('wears the survey theme on the landing page and the sign-in card, not on other pages', () => {
+    for (const [path, themed] of [
+      ['/', true],
+      ['/login', true],
+      ['/somewhere-else', false],
+    ] as const) {
+      const { container, unmount } = renderRoutes(routes, path);
+      expect(container.querySelector('.theme-survey') !== null).toBe(themed);
+      unmount();
+    }
   });
 });

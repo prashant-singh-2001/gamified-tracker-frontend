@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { buttonClass } from '@/components/ui/buttonStyles';
-import { RouteMap } from '../components/RouteMap';
+import { RouteMap } from '@/components/route-map/RouteMap';
 import { TierProfile } from '../components/TierProfile';
 import { XpFacts } from '../components/XpFacts';
 
