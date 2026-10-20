@@ -6,7 +6,8 @@ import { getTierInfo, RANK_TIERS } from '@/lib/api/types';
 import { cn } from '@/lib/utils/cn';
 import { formatNumber } from '@/lib/utils/format';
 import { useMyRank, useRankDistribution } from '../api';
-import { tierProgress } from '../tierProgress';
+import { climb, roman } from '../steps';
+import { DivisionSteps } from './DivisionSteps';
 import { markerPoint, nodePoint, ROW_H, rowOfTier, TRAIL_W, trailPath } from '../trail';
 
 const SUMMIT = RANK_TIERS.length;
@@ -42,7 +43,7 @@ export function TierMountain() {
   const counts = new Map(distribution.data.map((d) => [d.tier, d.userCount]));
   const widest = Math.max(1, ...distribution.data.map((d) => d.userCount));
   const mine = rank.data ?? null;
-  const marker = mine ? markerPoint(getTierInfo(mine.tier).order, tierProgress(mine)) : null;
+  const marker = mine ? markerPoint(getTierInfo(mine.tier).order, climb(mine)) : null;
   const tiers = [...RANK_TIERS].reverse();
   const height = tiers.length * ROW_H;
 
@@ -72,7 +73,7 @@ export function TierMountain() {
                 cx={x}
                 cy={y}
                 r={11}
-                fill="#C8F25A"
+                fill="var(--tier-9)"
                 stroke="var(--text)"
                 strokeWidth={3}
               />
@@ -82,7 +83,7 @@ export function TierMountain() {
                 cx={x}
                 cy={y}
                 r={7}
-                fill="var(--surface)"
+                fill={`var(--tier-${tier.order})`}
                 stroke="var(--text)"
                 strokeWidth={3}
               />
@@ -99,7 +100,6 @@ export function TierMountain() {
         {tiers.map((tier) => {
           const count = counts.get(tier.id) ?? 0;
           const own = mine?.tier === tier.id;
-          const darkness = ((tier.order - 1) / (RANK_TIERS.length - 1)) * 100;
           return (
             <li key={tier.id} aria-current={own ? 'true' : undefined}>
               <Link
@@ -116,7 +116,17 @@ export function TierMountain() {
                   </span>
                   <span className="text-sm text-muted">
                     {tier.band}
-                    {own && <span className="font-medium text-accent"> · You are here</span>}
+                    {own && (
+                      <span className="inline-flex items-center gap-1.5 font-medium text-accent">
+                        {' · '}You are here
+                        {mine?.division && (
+                          <>
+                            <DivisionSteps tier={tier.id} division={mine.division} width={22} />
+                            <span className="sr-only">, division {roman(mine.division)}</span>
+                          </>
+                        )}
+                      </span>
+                    )}
                   </span>
                 </span>
                 <span aria-hidden="true" className="flex min-w-0 flex-1 items-center">
@@ -124,12 +134,10 @@ export function TierMountain() {
                     <span className="h-5 w-full max-w-24 rounded-[3px] border border-dashed border-line-strong" />
                   ) : (
                     <span
-                      className="h-5 rounded-[3px]"
+                      className="h-5 rounded-[3px] border border-text/40"
                       style={{
                         width: `${Math.max(3, (count / widest) * 100)}%`,
-                        background: own
-                          ? 'var(--accent)'
-                          : `color-mix(in srgb, var(--text) ${darkness}%, var(--line-strong))`,
+                        background: `var(--tier-${tier.order})`,
                       }}
                     />
                   )}

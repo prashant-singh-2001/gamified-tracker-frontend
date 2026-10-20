@@ -11,7 +11,8 @@ type TierBadgeProps = {
 
 /**
  * One mountain glyph per tier: the peak climbs with the tier, from a low hill at Basecamp to a
- * tall summit. Decorative — the tier name is always available as text.
+ * tall summit, filled in the tier's colour (`--tier-N`) with an ink outline so it holds on paper
+ * and on ink. Decorative: the tier name is always available as text.
  */
 export function TierBadge({ tier, size = 28, showLabel = false, className }: TierBadgeProps) {
   const { order, label } = getTierInfo(tier);
@@ -23,14 +24,13 @@ export function TierBadge({ tier, size = 28, showLabel = false, className }: Tie
       <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" className="shrink-0">
         <path
           d={`M3 27 L12 ${shoulder.toFixed(1)} L16 ${peak.toFixed(1)} L21 ${(shoulder + 3).toFixed(1)} L29 27 Z`}
-          fill="var(--rank)"
-          opacity={0.18 + order * 0.09}
-          stroke="var(--rank)"
+          fill={`var(--tier-${order})`}
+          stroke="var(--text)"
           strokeWidth="1.6"
           strokeLinejoin="round"
         />
       </svg>
-      {showLabel && <span className="font-display font-extrabold text-rank">{label}</span>}
+      {showLabel && <span className="font-display font-extrabold">{label}</span>}
     </span>
   );
 }

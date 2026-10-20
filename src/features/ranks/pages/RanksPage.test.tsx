@@ -140,7 +140,9 @@ describe('Ranks — header', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Alpine' })).toBeInTheDocument();
     expect(screen.getByText('Top 31%')).toBeInTheDocument();
-    expect(screen.getByText('#30 of 120')).toBeInTheDocument();
+    expect(
+      screen.getByText((_, el) => el?.tagName === 'SPAN' && el.textContent === '#30 of 120'),
+    ).toBeInTheDocument();
     expect(screen.getByText('Level 7')).toBeInTheDocument();
     expect(screen.getByText('1,500 XP to Ridge')).toBeInTheDocument();
     expect(screen.getByText(/Rank updates every few minutes/)).toBeInTheDocument();

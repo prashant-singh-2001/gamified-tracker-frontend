@@ -6,6 +6,9 @@ import { qk } from '@/lib/api/queryKeys';
 import type { RankCard, RankTier } from '@/lib/api/types';
 import type { LeaderboardEntry, RankDistribution, RankTierMember } from './types';
 
+/** Ranks recompute about every 30 seconds, so the live screens refetch on that beat and on focus. */
+export const LIVE = { refetchInterval: 30_000, refetchOnWindowFocus: true } as const;
+
 /**
  * The caller's own rank card, or null while they are not ranked yet (ranks recompute every few
  * minutes). Opts in to `200 {"ranked": false}`; a 404 from an older backend reads the same way.
@@ -13,6 +16,7 @@ import type { LeaderboardEntry, RankDistribution, RankTierMember } from './types
 export function useMyRank() {
   return useQuery({
     queryKey: qk.ranks.me(),
+    ...LIVE,
     queryFn: async (): Promise<RankCard | null> => {
       try {
         const { data } = await api.get<RankCard | { ranked: false }>(endpoints.ranks.me, {
@@ -32,6 +36,7 @@ export function useMyTierBoard(enabled: boolean) {
   return useQuery({
     queryKey: qk.ranks.myBoard(),
     enabled,
+    ...LIVE,
     queryFn: async () =>
       (
         await api.get<RankTierMember[]>(endpoints.ranks.myLeaderboard, {
@@ -58,8 +63,8 @@ export function useTierBoard(tier: RankTier, size: number) {
 export function useRankDistribution() {
   return useQuery({
     queryKey: qk.ranks.ladder(),
+    ...LIVE,
     queryFn: async () => (await api.get<RankDistribution[]>(endpoints.ranks.all)).data,
-    staleTime: 60_000,
   });
 }
 
@@ -70,6 +75,7 @@ export const BOARD_PAGE = 50;
 export function useTierBoardPages(tier: RankTier) {
   return useInfiniteQuery({
     queryKey: qk.ranks.tierPages(tier),
+    ...LIVE,
     initialPageParam: 0,
     queryFn: async ({ pageParam }) =>
       (

@@ -76,6 +76,14 @@ export function nudgeFor(card: RankCard): Nudge | null {
   return null;
 }
 
+/** The nudge as words: "About 60 XP to Ridge I", "Almost at Ridge I", "Top tier". */
+export function nudgeText(nudge: Nudge, withDivisions: boolean): string {
+  if (nudge.kind === 'top')
+    return withDivisions ? 'You are at the top of the mountain.' : 'Top tier';
+  if (nudge.kind === 'close') return `Almost at ${nudge.to}`;
+  return `${nudge.exact ? '' : 'About '}${nudge.xp} XP to ${nudge.to}`;
+}
+
 export type MovementKind = 'new' | 'promoted' | 'demoted' | 'up' | 'down' | 'steady';
 
 export type Movement = {

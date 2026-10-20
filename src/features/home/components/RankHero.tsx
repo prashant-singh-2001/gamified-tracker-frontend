@@ -7,6 +7,7 @@ import { buttonClass } from '@/components/ui/buttonStyles';
 import { ErrorPanel } from '@/components/ui/ErrorPanel';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import { useMyRank } from '@/features/ranks/api';
+import { climb, nudgeFor, nudgeText, stepLabel } from '@/features/ranks/steps';
 import { nextTierUp, tierProgress } from '@/features/ranks/tierProgress';
 import { getTierInfo, RANK_TIERS, type RankCard } from '@/lib/api/types';
 import { formatNumber, formatTopPercent } from '@/lib/utils/format';
@@ -21,15 +22,15 @@ let introPlayed = false;
 function TierBand({ card }: { card: RankCard }) {
   const info = getTierInfo(card.tier);
   const next = nextTierUp(card.tier);
-  const progress = tierProgress(card);
+  const progress = card.division !== undefined ? (card.divisionProgress ?? 0) : tierProgress(card);
   // The API names the next tier that has people in it and how far away it is; without that, fall
   // back to the next tier on the ladder.
-  const nudge =
-    card.nextTier && card.xpToNextTier != null
-      ? `${formatNumber(Math.ceil(card.xpToNextTier))} XP to ${getTierInfo(card.nextTier).label}`
-      : next
-        ? `→ ${next.label}`
-        : 'Top tier';
+  const found = nudgeFor(card);
+  const nudge = found
+    ? nudgeText(found, card.division !== undefined)
+    : next
+      ? `→ ${next.label}`
+      : 'Top tier';
   return (
     <div className="flex w-full max-w-[22rem] flex-col gap-2">
       <div
@@ -47,7 +48,7 @@ function TierBand({ card }: { card: RankCard }) {
       </div>
       <div className="flex justify-between text-sm text-muted">
         <span>
-          {info.label} · {info.band}
+          {stepLabel(card.tier, card.division)} · {info.band}
         </span>
         <span>{nudge}</span>
       </div>
@@ -61,6 +62,8 @@ function YouAreHere({ card }: { card: RankCard | null }) {
   const markerRef = useRef<SVGGElement>(null);
   const tier = card?.tier;
   const percentile = card?.percentile;
+  const division = card?.division;
+  const divisionProgress = card?.divisionProgress;
 
   useEffect(() => {
     const route = routeRef.current;
@@ -72,7 +75,7 @@ function YouAreHere({ card }: { card: RankCard | null }) {
     const target = routeDistance(
       lengths,
       getTierInfo(tier).order,
-      tierProgress({ tier, percentile }),
+      climb({ tier, percentile, division, divisionProgress }),
     );
     const place = (length: number) => {
       const { x, y } = route.getPointAtLength(length);
@@ -95,7 +98,7 @@ function YouAreHere({ card }: { card: RankCard | null }) {
       if (t < 1) frame = requestAnimationFrame(step);
     });
     return () => cancelAnimationFrame(frame);
-  }, [tier, percentile]);
+  }, [tier, percentile, division, divisionProgress]);
 
   return (
     <RouteMap animate={false} routeRef={routeRef}>
@@ -196,7 +199,6 @@ export function RankHero() {
   }
 
   const card = rank.data;
-  const tier = getTierInfo(card.tier);
 
   return (
     <Panel
@@ -208,7 +210,7 @@ export function RankHero() {
               id="rank-hero-title"
               className="font-display text-[clamp(3.5rem,6vw,5.5rem)] leading-[0.9] font-extrabold"
             >
-              {tier.label}
+              {stepLabel(card.tier, card.division)}
             </h2>
             <p className="flex items-baseline gap-4 pb-1 text-xl text-soft">
               <span className="font-display text-4xl leading-none font-bold text-text">
