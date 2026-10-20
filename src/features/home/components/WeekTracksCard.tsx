@@ -59,7 +59,7 @@ export function WeekTracksCard() {
     <Card className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="font-display text-xl font-extrabold">This week</h2>
+          <h2 className="font-display text-3xl leading-none font-extrabold">This week</h2>
           <p className="text-sm text-muted">The last 7 days</p>
         </div>
         <div className="flex items-baseline gap-3">
@@ -79,16 +79,13 @@ export function WeekTracksCard() {
       </div>
 
       {alive.length > 0 && (
-        <ul
-          className="mt-auto grid grid-cols-2 gap-3 border-t border-line pt-6 xl:grid-cols-3"
-          aria-label="Active streaks"
-        >
+        <ul className="mt-auto flex flex-col border-t border-line pt-2" aria-label="Active streaks">
           {alive.map((s) => {
             const name = names.get(s.activityId);
             return (
               <li
                 key={s.activityId}
-                className="flex flex-col gap-2 rounded-xl border border-line bg-surface-2 p-4"
+                className="flex items-center justify-between gap-3 border-b border-line py-3 last:border-0"
               >
                 <span className="flex items-center gap-3">
                   <StreakPill count={s.currentStreak} />

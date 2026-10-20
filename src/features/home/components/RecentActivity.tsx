@@ -24,7 +24,7 @@ export function RecentActivity() {
 
   return (
     <section aria-label="Recent activity" className="flex flex-col gap-3">
-      <h3 className="font-mono text-xs font-bold tracking-widest text-muted uppercase">Recent</h3>
+      <h3 className="font-display text-2xl leading-none font-extrabold">Recent</h3>
       {logs.isPending ? (
         <div role="status" aria-label="Loading recent activity" className="flex flex-col gap-2">
           {Array.from({ length: 3 }, (_, i) => (

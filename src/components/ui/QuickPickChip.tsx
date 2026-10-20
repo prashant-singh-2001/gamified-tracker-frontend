@@ -23,7 +23,7 @@ export function QuickPickChip({
     <Link
       to={to}
       className={cn(
-        'inline-flex items-center gap-2 border border-accent-ink/25 bg-accent-ink/10 text-[15px] font-medium text-accent-ink no-underline transition hover:bg-accent-ink/20',
+        'inline-flex items-center gap-2 border border-line-strong bg-surface-2 text-[15px] font-medium text-text no-underline transition hover:border-accent hover:text-accent',
         size === 'lg' ? 'min-h-14 w-full rounded-2xl px-4 text-base' : 'min-h-11 rounded-full px-4',
         className,
       )}

@@ -37,7 +37,7 @@ export function TierBoardCard() {
 
   return (
     <Card className="flex flex-col gap-5">
-      <h2 className="font-display text-xl font-extrabold">Top of the tiers</h2>
+      <h2 className="font-display text-3xl leading-none font-extrabold">Top of the tiers</h2>
 
       <div className="flex items-center justify-between gap-3">
         <button
