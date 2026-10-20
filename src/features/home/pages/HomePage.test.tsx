@@ -239,6 +239,44 @@ describe('Home — rank cards', () => {
   });
 });
 
+describe('Home — route hero', () => {
+  it('puts a marker on the route for a ranked climber, with the map kept decorative', async () => {
+    mockHome({});
+    renderHome();
+
+    const marker = await screen.findByTestId('you-marker');
+    expect(marker.closest('[aria-hidden="true"]')).not.toBeNull();
+    expect(marker).toHaveTextContent('You');
+  });
+
+  it('draws the route without a marker for someone who is not ranked yet', async () => {
+    mockHome({ rank: null });
+    renderHome();
+
+    await screen.findByText("You're not ranked yet");
+    expect(screen.queryByTestId('you-marker')).not.toBeInTheDocument();
+  });
+
+  it("shows today's numbers in the hero rather than in the Log card", async () => {
+    mockHome({});
+    renderHome();
+
+    const today = await screen.findByRole('region', { name: 'Today' });
+    const hero = screen.getByRole('region', { name: 'Alpine' });
+    expect(hero).toContainElement(today);
+    expect(screen.getByRole('region', { name: 'What did you do?' })).not.toContainElement(today);
+  });
+
+  it('explains an empty Around you panel to an unranked user', async () => {
+    mockHome({ rank: null });
+    renderHome();
+
+    expect(
+      await screen.findByText('Once you are ranked, the climbers next to you show up here.'),
+    ).toBeInTheDocument();
+  });
+});
+
 describe('Home — tier board', () => {
   const stepUp = async (times: number) => {
     for (let i = 0; i < times; i++) {
