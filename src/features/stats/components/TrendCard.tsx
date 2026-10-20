@@ -21,6 +21,7 @@ function RangeChoice({ value, onChange }: { value: number; onChange: (days: numb
           type="button"
           role="radio"
           aria-checked={days === value}
+          aria-label={`${days} days`}
           onClick={() => onChange(days)}
           className={cn(
             'min-h-9 min-w-11 rounded-full border px-3 font-mono text-sm',
@@ -30,7 +31,6 @@ function RangeChoice({ value, onChange }: { value: number; onChange: (days: numb
           )}
         >
           {days}
-          <span className="sr-only"> days</span>
         </button>
       ))}
     </div>
