@@ -26,3 +26,27 @@ export type WeeklyReport = {
   previousPeriodStart?: string;
   previousPeriodEnd?: string;
 };
+
+/** `GET .../category-summary`: all-time totals, only for categories that have logs. */
+export type CategoryTotal = {
+  category: Category;
+  totalDurationMinutes: number;
+  totalXpEarned: number;
+  totalSessions: number;
+};
+
+/** One of the 24 hourly buckets of `best-time-of-day`. `hour` is 0-23 in UTC, not local time. */
+export type HourBucket = {
+  hour: number;
+  totalDurationMinutes: number;
+  totalXpEarned: number;
+  totalSessions: number;
+};
+
+/** `GET .../best-time-of-day`: `bestHour` and the category fields are null until there is XP. */
+export type BestTime = {
+  hourlyBreakdown: HourBucket[];
+  bestHour: number | null;
+  bestCategory: Category | null;
+  bestCategoryHour: number | null;
+};

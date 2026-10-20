@@ -34,7 +34,8 @@ export const qk = {
   },
   analytics: {
     all: ['analytics'] as const,
-    xpOverTime: (userId: number) => ['analytics', 'xpOverTime', userId] as const,
+    xpOverTime: (userId: number, days: number) =>
+      ['analytics', 'xpOverTime', userId, days] as const,
     categorySummary: (userId: number) => ['analytics', 'categorySummary', userId] as const,
     weeklyReport: (userId: number) => ['analytics', 'weeklyReport', userId] as const,
     bestTimeOfDay: (userId: number) => ['analytics', 'bestTimeOfDay', userId] as const,
