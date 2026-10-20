@@ -12,6 +12,7 @@ import LogActivitySheet from './LogActivitySheet';
 
 const catalog: CatalogActivity[] = [
   {
+    id: 1,
     name: 'Studying',
     category: 'STUDY',
     xpMultiplier: 0,
@@ -20,6 +21,7 @@ const catalog: CatalogActivity[] = [
     createdAt: '2026-10-01T00:00:00',
   },
   {
+    id: 2,
     name: 'Running',
     category: 'HEALTH',
     xpMultiplier: 0,
@@ -33,7 +35,7 @@ function saved(req: ActivityLogRequest): ActivityLogResponse {
   return {
     id: 42,
     userId: 7,
-    activity: { id: 1, ...catalog[0]!, xpMultiplier: 1.5 },
+    activity: { ...catalog[0]!, xpMultiplier: 1.5 },
     startTime: req.startTime,
     endTime: req.endTime,
     durationMinutes: 60,

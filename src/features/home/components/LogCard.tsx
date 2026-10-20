@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router';
 import { Plus } from 'lucide-react';
 import { QuickPickChip } from '@/components/ui/QuickPickChip';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { useCatalog } from '@/features/activities/api';
-import { useMyLogs } from '@/features/history/api';
+import { useCatalog, useRecentActivities } from '@/features/activities/api';
 import { NaturalInput } from '@/features/log-activity/components/NaturalInput';
 import type { Category } from '@/lib/api/types';
 import { CATEGORY_ICON } from '@/lib/utils/category';
@@ -15,37 +14,24 @@ const MAX_CHIPS = 4;
 type Pick = { name: string; category: Category };
 
 /**
- * Quick picks are the user's most-logged activities, derived from their history until the API
- * offers a "recent activities" endpoint. A new user gets the first active catalog entries.
+ * Quick picks are the user's most-logged active activities, from the server. A new user has none
+ * yet, so they get the first active catalog entries.
  */
 function useQuickPicks() {
-  const logs = useMyLogs();
+  const recent = useRecentActivities(MAX_CHIPS);
   const catalog = useCatalog();
 
   const picks = useMemo<Pick[]>(() => {
-    if (logs.data && logs.data.length > 0) {
-      const counts = new Map<string, { count: number; pick: Pick }>();
-      for (const { activity } of logs.data) {
-        if (!activity.active) continue;
-        const entry = counts.get(activity.name) ?? {
-          count: 0,
-          pick: { name: activity.name, category: activity.category },
-        };
-        entry.count += 1;
-        counts.set(activity.name, entry);
-      }
-      return [...counts.values()]
-        .sort((a, b) => b.count - a.count)
-        .slice(0, MAX_CHIPS)
-        .map((e) => e.pick);
+    if (recent.data && recent.data.length > 0) {
+      return recent.data.map((r) => ({ name: r.name, category: r.category }));
     }
     return (catalog.data ?? [])
       .filter((a) => a.active)
       .slice(0, MAX_CHIPS)
       .map((a) => ({ name: a.name, category: a.category }));
-  }, [logs.data, catalog.data]);
+  }, [recent.data, catalog.data]);
 
-  const loading = logs.isPending || (logs.data?.length === 0 && catalog.isPending);
+  const loading = recent.isPending || (recent.data?.length === 0 && catalog.isPending);
   return { picks, loading };
 }
 

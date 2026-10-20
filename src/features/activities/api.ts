@@ -3,7 +3,7 @@ import { api } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
 import { qk } from '@/lib/api/queryKeys';
 import { useUserId } from '@/lib/auth/useUserId';
-import type { CatalogActivity, Streak } from './types';
+import type { CatalogActivity, RecentActivityPick, Streak } from './types';
 
 export function useCatalog() {
   return useQuery({
@@ -20,5 +20,20 @@ export function useStreaks() {
     queryKey: qk.activityLog.streaks(userId ?? 0),
     enabled: userId !== undefined,
     queryFn: async () => (await api.get<Streak[]>(endpoints.activityLog.streaks(userId ?? 0))).data,
+  });
+}
+
+/** The caller's most-logged active activities, most logged first (quick picks). */
+export function useRecentActivities(limit: number) {
+  const userId = useUserId();
+  return useQuery({
+    queryKey: qk.activityLog.recent(userId ?? 0, limit),
+    enabled: userId !== undefined,
+    queryFn: async () =>
+      (
+        await api.get<RecentActivityPick[]>(endpoints.activityLog.recent(userId ?? 0), {
+          params: { limit },
+        })
+      ).data,
   });
 }

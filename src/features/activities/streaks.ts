@@ -1,11 +1,5 @@
-import { serverToday, toServerDate } from '@/lib/utils/serverTime';
+import { serverToday } from '@/lib/utils/serverTime';
 import type { Streak } from './types';
-
-function yesterdayOf(today: string): string {
-  const d = new Date(`${today}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - 1);
-  return toServerDate(d);
-}
 
 /** Already logged today (UTC day), so the streak is safe until tomorrow. */
 export function loggedToday(streak: Streak, today = serverToday()): boolean {
@@ -13,13 +7,9 @@ export function loggedToday(streak: Streak, today = serverToday()): boolean {
 }
 
 /**
- * The backend only updates a streak when something is logged and never resets `currentStreak` on
- * a missed day, so a stale row still reports its old count. A streak is genuinely alive only if
- * it was last extended today or yesterday (UTC).
+ * The backend only updates a streak when something is logged, so a stale row still reports its
+ * old count. It says itself whether the streak is alive (`active`); only then is the count live.
  */
-export function isStreakAlive(streak: Streak, today = serverToday()): boolean {
-  return (
-    streak.currentStreak > 0 &&
-    (streak.lastActivityDate === today || streak.lastActivityDate === yesterdayOf(today))
-  );
+export function isStreakAlive(streak: Streak): boolean {
+  return streak.active && streak.currentStreak > 0;
 }

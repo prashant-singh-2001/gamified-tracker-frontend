@@ -6,7 +6,7 @@ import { CardSkeleton } from '@/components/ui/Skeleton';
 import { ErrorPanel } from '@/components/ui/ErrorPanel';
 import { StreakPill } from '@/components/ui/StreakPill';
 import { WeekStrip } from '@/components/ui/WeekStrip';
-import { useStreaks } from '@/features/activities/api';
+import { useCatalog, useStreaks } from '@/features/activities/api';
 import { isStreakAlive, loggedToday } from '@/features/activities/streaks';
 import { useMyLogs } from '@/features/history/api';
 import { useWeeklyReport } from '@/features/stats/api';
@@ -22,7 +22,7 @@ function Change({ value }: { value: number }) {
     >
       <Icon className="size-4" aria-hidden="true" />
       {Math.round(Math.abs(value))}%
-      <span className="sr-only">{up ? ' up' : ' down'} on last week</span>
+      <span className="sr-only">{up ? ' up' : ' down'} on the same days last week</span>
     </span>
   );
 }
@@ -31,14 +31,17 @@ function Change({ value }: { value: number }) {
 export function WeekTracksCard() {
   const report = useWeeklyReport();
   const streaks = useStreaks();
+  const catalog = useCatalog();
   const logs = useMyLogs();
 
-  // The streak endpoint only knows activity ids; names come from the user's logged activities.
+  // The streak endpoint only knows activity ids. The catalog has them; logged activities fill in
+  // any that have since been deactivated.
   const names = useMemo(() => {
     const map = new Map<number, string>();
     for (const { activity } of logs.data ?? []) map.set(activity.id, activity.name);
+    for (const a of catalog.data ?? []) map.set(a.id, a.name);
     return map;
-  }, [logs.data]);
+  }, [catalog.data, logs.data]);
 
   if (report.isPending) return <CardSkeleton label="Loading this week" />;
   if (report.isError) {
@@ -60,7 +63,7 @@ export function WeekTracksCard() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="font-display text-3xl leading-none font-extrabold">This week</h2>
-          <p className="text-sm text-muted">The last 7 days</p>
+          <p className="text-sm text-muted">Monday to Sunday</p>
         </div>
         <div className="flex items-baseline gap-3">
           <span className="font-mono text-2xl font-bold text-xp">

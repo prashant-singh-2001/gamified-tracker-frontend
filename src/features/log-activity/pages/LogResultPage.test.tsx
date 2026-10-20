@@ -80,7 +80,13 @@ function renderResult(opts: Opts = {}) {
     http.get('*/api/activitylog/streaks/user/:id', () =>
       HttpResponse.json(
         opts.streaks ?? [
-          { activityId: 5, currentStreak: 6, longestStreak: 9, lastActivityDate: serverToday() },
+          {
+            activityId: 5,
+            currentStreak: 6,
+            longestStreak: 9,
+            lastActivityDate: serverToday(),
+            active: true,
+          },
         ],
       ),
     ),

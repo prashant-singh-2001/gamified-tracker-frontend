@@ -1,7 +1,8 @@
 import { CATEGORY_DEFAULT_MULTIPLIER, type Category } from '@/lib/api/types';
 
-/** `GET /api/activity/` entry (ActivityResponseRecord). The catalog exposes no id. */
+/** `GET /api/activity/` entry (ActivityResponseRecord). */
 export type CatalogActivity = {
+  id: number;
   name: string;
   category: Category;
   xpMultiplier: number;
@@ -24,4 +25,16 @@ export type Streak = {
   longestStreak: number;
   /** `YYYY-MM-DD` (UTC day) or null if the activity was never logged. */
   lastActivityDate: string | null;
+  /** Still alive: last extended today or yesterday (UTC). `currentStreak` is stale when false. */
+  active: boolean;
+};
+
+/** `GET /api/activitylog/user/{id}/recent` row: the caller's most-logged active activities. */
+export type RecentActivityPick = {
+  activityId: number;
+  name: string;
+  category: Category;
+  timesLogged: number;
+  /** Start of the most recent session, ISO LocalDateTime. */
+  lastUsedAt: string;
 };

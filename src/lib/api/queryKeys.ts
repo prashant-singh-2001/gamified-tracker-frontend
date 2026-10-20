@@ -23,6 +23,8 @@ export const qk = {
     allByUser: () => ['activityLog', 'user'] as const,
     allStreaks: () => ['activityLog', 'streaks'] as const,
     byUser: (userId: number) => ['activityLog', 'user', userId] as const,
+    recent: (userId: number, limit: number) =>
+      ['activityLog', 'user', userId, 'recent', limit] as const,
     byId: (logId: number | string) => ['activityLog', logId] as const,
     streaks: (userId: number) => ['activityLog', 'streaks', userId] as const,
     flagged: () => ['activityLog', 'flagged'] as const,
