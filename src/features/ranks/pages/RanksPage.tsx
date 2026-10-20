@@ -1,18 +1,12 @@
-import { PlaceholderPage } from '@/components/ui/PlaceholderPage';
+import { RankHeader } from '../components/RankHeader';
+import { TierMountain } from '../components/TierMountain';
 
+/** Rank & leaderboards: where you stand, then the mountain. */
 export default function RanksPage() {
   return (
-    <PlaceholderPage
-      title="Rank & leaderboards"
-      screen={8}
-      endpoints={[
-        'GET /api/ranks/me',
-        'GET /api/ranks/me/leaderboard',
-        'GET /api/ranks',
-        'GET /api/leaderboard',
-        'GET /api/leaderboard/activity/{activityId}',
-        'GET /api/leaderboard/me',
-      ]}
-    />
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
+      <RankHeader />
+      <TierMountain />
+    </div>
   );
 }
