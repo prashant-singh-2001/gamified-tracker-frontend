@@ -84,7 +84,7 @@ function RankCard() {
       <h2 className="text-sm text-muted">Rank</h2>
       {rank.isPending ? (
         <Skeleton className="h-8 w-40" />
-      ) : rank.isSuccess ? (
+      ) : rank.data ? (
         <p className="font-bold">
           <span className="text-rank">{getTierInfo(rank.data.tier).label}</span>
           <span className="font-mono text-soft">
@@ -94,6 +94,12 @@ function RankCard() {
         </p>
       ) : (
         <p className="text-soft">You&apos;ll be ranked after the next rank update.</p>
+      )}
+      {rank.data?.nextTier && rank.data.xpToNextTier != null && (
+        <p className="text-sm text-soft">
+          {formatNumber(Math.ceil(rank.data.xpToNextTier))} XP to{' '}
+          {getTierInfo(rank.data.nextTier).label}
+        </p>
       )}
       <p className="text-sm text-muted">Rank updates every few minutes.</p>
       <Link to="/app/ranks" className={moreLink}>

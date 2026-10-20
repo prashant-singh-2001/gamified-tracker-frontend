@@ -24,6 +24,13 @@ export type RankCard = {
   position: number;
   totalUsers: number;
   updatedAt: string; // ISO LocalDateTime
+  /**
+   * The rank nudge. Absent on older backends, so every use has a fallback. `nextTier` is the next
+   * better tier that currently has members (empty tiers are skipped); null at the top.
+   */
+  tierCutoffXp?: number;
+  nextTier?: RankTier | null;
+  xpToNextTier?: number | null;
 };
 
 /** RFC 7807 body returned by every backend service (Spring ProblemDetail). */

@@ -92,6 +92,7 @@ export function TierBoardCard() {
                   userId: m.userId,
                   totalXp: m.totalXp,
                   level: m.overallLevel,
+                  name: m.displayName,
                 }))}
                 currentUserId={userId}
                 caption={`Top ${ROWS} in ${info.label}`}

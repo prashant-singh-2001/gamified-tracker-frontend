@@ -9,6 +9,8 @@ export type LeaderboardRow = {
   position: number;
   userId: number;
   totalXp: number;
+  /** From the API ("Ada L."); without it the row reads "Climber #id". */
+  name?: string | null;
   /** Shown as a "Lv" column when any row has one. */
   level?: number;
 };
@@ -75,7 +77,7 @@ export function LeaderboardTable({
                       <User className="size-3.5" />
                     </span>
                     <span className={cn('truncate text-[15px]', own ? 'font-bold' : 'text-soft')}>
-                      {displayName(row.userId, currentUserId)}
+                      {displayName(row.userId, currentUserId, row.name)}
                     </span>
                   </span>
                 </td>

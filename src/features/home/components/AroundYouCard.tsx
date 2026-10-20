@@ -5,7 +5,6 @@ import { LeaderboardTable, type LeaderboardRow } from '@/components/ui/Leaderboa
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import { useMyRank, useMyTierBoard } from '@/features/ranks/api';
 import { neighboursOf } from '@/features/ranks/neighbours';
-import { isNotFound } from '@/lib/api/errors';
 import { getTierInfo } from '@/lib/api/types';
 import { useUserId } from '@/lib/auth/useUserId';
 
@@ -15,21 +14,24 @@ const NEIGHBOURS = 5;
 export function AroundYouCard() {
   const rank = useMyRank();
   const userId = useUserId();
-  const board = useMyTierBoard(rank.isSuccess);
+  const board = useMyTierBoard(rank.isSuccess && rank.data !== null);
 
   if (rank.isPending) return <CardSkeleton label="Loading your neighbours" />;
   if (rank.isError) {
-    return isNotFound(rank.error) ? (
-      <Card className="flex flex-col gap-3">
-        <h2 className="font-display text-3xl leading-none font-extrabold">Around you</h2>
-        <p className="text-soft">Once you are ranked, the climbers next to you show up here.</p>
-      </Card>
-    ) : (
+    return (
       <ErrorPanel
         error={rank.error}
         title="Couldn't load your neighbours"
         onRetry={() => void rank.refetch()}
       />
+    );
+  }
+  if (rank.data === null) {
+    return (
+      <Card className="flex flex-col gap-3">
+        <h2 className="font-display text-3xl leading-none font-extrabold">Around you</h2>
+        <p className="text-soft">Once you are ranked, the climbers next to you show up here.</p>
+      </Card>
     );
   }
 
@@ -47,6 +49,7 @@ export function AroundYouCard() {
         userId: m.userId,
         totalXp: m.totalXp,
         level: m.overallLevel,
+        name: m.displayName,
       }));
     } else {
       // Too far down a big tier to be in the loaded page: show the top, then pin the user.
@@ -56,6 +59,7 @@ export function AroundYouCard() {
           userId: m.userId,
           totalXp: m.totalXp,
           level: m.overallLevel,
+          name: m.displayName,
         })),
         { position: card.position, userId, totalXp: card.totalXp, level: card.overallLevel },
       ];

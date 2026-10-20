@@ -8,7 +8,6 @@ import { ErrorPanel } from '@/components/ui/ErrorPanel';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import { useMyRank } from '@/features/ranks/api';
 import { nextTierUp, tierProgress } from '@/features/ranks/tierProgress';
-import { isNotFound } from '@/lib/api/errors';
 import { getTierInfo, RANK_TIERS, type RankCard } from '@/lib/api/types';
 import { formatNumber, formatTopPercent } from '@/lib/utils/format';
 import { TodayStats } from './TodayStats';
@@ -23,6 +22,14 @@ function TierBand({ card }: { card: RankCard }) {
   const info = getTierInfo(card.tier);
   const next = nextTierUp(card.tier);
   const progress = tierProgress(card);
+  // The API names the next tier that has people in it and how far away it is; without that, fall
+  // back to the next tier on the ladder.
+  const nudge =
+    card.nextTier && card.xpToNextTier != null
+      ? `${formatNumber(Math.ceil(card.xpToNextTier))} XP to ${getTierInfo(card.nextTier).label}`
+      : next
+        ? `→ ${next.label}`
+        : 'Top tier';
   return (
     <div className="flex w-full max-w-[22rem] flex-col gap-2">
       <div
@@ -42,7 +49,7 @@ function TierBand({ card }: { card: RankCard }) {
         <span>
           {info.label} · {info.band}
         </span>
-        <span>{next ? `→ ${next.label}` : 'Top tier'}</span>
+        <span>{nudge}</span>
       </div>
     </div>
   );
@@ -145,7 +152,7 @@ export function RankHero() {
   const rank = useMyRank();
 
   if (rank.isPending) return <CardSkeleton label="Loading your rank" />;
-  if (rank.isError && !isNotFound(rank.error)) {
+  if (rank.isError) {
     return (
       <ErrorPanel
         error={rank.error}
@@ -155,7 +162,7 @@ export function RankHero() {
     );
   }
 
-  if (rank.isError) {
+  if (rank.data === null) {
     return (
       <Panel
         map={<YouAreHere card={null} />}

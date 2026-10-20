@@ -85,7 +85,7 @@ function week(overrides: Partial<WeeklyReport> = {}): WeeklyReport {
 type Mocks = {
   logs?: ActivityLogResponse[];
   catalog?: CatalogActivity[];
-  rank?: RankCard | null; // null → 404
+  rank?: RankCard | null | 'unranked-200'; // null → 404
   myBoard?: RankTierMember[];
   streaks?: Streak[];
   weekly?: WeeklyReport;
@@ -116,7 +116,9 @@ function mockHome(m: Mocks = {}) {
     http.get('*/api/ranks/me', () =>
       m.rank === null
         ? HttpResponse.json({ detail: 'No rank yet for userId: 7' }, { status: 404 })
-        : HttpResponse.json(m.rank ?? rankCard),
+        : m.rank === 'unranked-200'
+          ? HttpResponse.json({ ranked: false })
+          : HttpResponse.json(m.rank ?? rankCard),
     ),
     http.get('*/api/activitylog/streaks/user/:id', () => HttpResponse.json(m.streaks ?? [])),
     http.get('*/api/activitylog/analytics/user/:id/weekly-report', () =>
@@ -274,6 +276,60 @@ describe('Home — route hero', () => {
     expect(
       await screen.findByText('Once you are ranked, the climbers next to you show up here.'),
     ).toBeInTheDocument();
+  });
+});
+
+describe('Home — rank data from the API', () => {
+  it('asks for the rank with allowUnranked, and reads {"ranked": false} as not ranked', async () => {
+    let asked = '';
+    mockHome({ rank: 'unranked-200' });
+    server.use(
+      http.get('*/api/ranks/me', ({ request }) => {
+        asked = new URL(request.url).search;
+        return HttpResponse.json({ ranked: false });
+      }),
+    );
+    renderHome();
+
+    expect(await screen.findByText("You're not ranked yet")).toBeInTheDocument();
+    expect(asked).toBe('?allowUnranked=true');
+  });
+
+  it('shows how much XP the next tier is away, naming the tier the API chose', async () => {
+    mockHome({
+      rank: { ...rankCard, tierCutoffXp: 1000, nextTier: 'PEAK', xpToNextTier: 2492.8 },
+    });
+    renderHome();
+
+    expect(await screen.findByText('2,493 XP to Peak')).toBeInTheDocument();
+  });
+
+  it('says Top tier at the top, where there is nothing further to climb', async () => {
+    mockHome({
+      rank: { ...rankCard, tier: 'SUMMIT', percentile: 0, nextTier: null, xpToNextTier: null },
+    });
+    renderHome();
+
+    expect(await screen.findByText('Top tier')).toBeInTheDocument();
+  });
+
+  it('shows the names the API sends, and falls back to a number when there is none', async () => {
+    mockHome({
+      rank: rankCard,
+      myBoard: [
+        { ...members(1)[0]!, userId: 301, displayName: 'Ada L.' },
+        { ...members(2)[1]!, userId: 302, displayName: null },
+        { ...members(3)[2]!, userId: ME, displayName: 'Prashant S.' },
+      ].map((m, i) => ({ ...m, withinRankPosition: i + 1 })),
+    });
+    renderHome();
+
+    const table = await screen.findByRole('table', { name: /around your position/i });
+    expect(within(table).getByText('Ada L.')).toBeInTheDocument();
+    expect(within(table).getByText('Climber #302')).toBeInTheDocument();
+    // the signed-in user is always "You", whatever name the API has
+    expect(within(table).getByText('You')).toBeInTheDocument();
+    expect(within(table).queryByText('Prashant S.')).not.toBeInTheDocument();
   });
 });
 
