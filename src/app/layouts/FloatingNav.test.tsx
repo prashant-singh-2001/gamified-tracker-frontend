@@ -20,7 +20,7 @@ function renderNav(userId = 7) {
         updatedAt: '2026-10-19T10:00:00',
       }),
     ),
-    http.get('*/api/notifications/unread-count', () => HttpResponse.json({ Count: 3 })),
+    http.get('*/api/notifications/unread-count', () => HttpResponse.json({ count: 3 })),
   );
   return renderRoutes([{ path: '/app', element: <FloatingNav /> }], '/app');
 }

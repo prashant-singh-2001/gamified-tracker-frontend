@@ -12,7 +12,7 @@ export function useUnreadCount() {
   return useQuery({
     queryKey: qk.notifications.unreadCount(),
     queryFn: async () =>
-      (await api.get<UnreadCount>(endpoints.notifications.unreadCount)).data.Count,
+      (await api.get<UnreadCount>(endpoints.notifications.unreadCount)).data.count,
     refetchOnWindowFocus: true,
     staleTime: 15_000,
   });
