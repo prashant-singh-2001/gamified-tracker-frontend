@@ -22,4 +22,6 @@ export type LeaderboardEntry = {
   rank: number;
   userId: number;
   totalXp: number;
+  /** First name plus last initial; null for an account that no longer exists. */
+  displayName?: string | null;
 };

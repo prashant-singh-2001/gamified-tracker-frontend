@@ -9,9 +9,11 @@ export const qk = {
     ladder: () => ['ranks', 'ladder'] as const,
     myBoard: () => ['ranks', 'myBoard'] as const,
     tier: (tier: string, size: number) => ['ranks', 'tier', tier, size] as const,
+    tierPages: (tier: string) => ['ranks', 'tierPages', tier] as const,
   },
   leaderboard: {
-    global: () => ['leaderboard', 'global'] as const,
+    /** One board, paged: all activities (`null`) or one activity. */
+    global: (activityId: number | null) => ['leaderboard', 'global', activityId] as const,
     activity: (activityId: number | string) => ['leaderboard', 'activity', activityId] as const,
     me: () => ['leaderboard', 'me'] as const,
   },
