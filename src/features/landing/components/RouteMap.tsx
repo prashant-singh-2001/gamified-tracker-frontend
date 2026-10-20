@@ -1,0 +1,131 @@
+import type { CSSProperties } from 'react';
+import { RANK_TIERS } from '@/lib/api/types';
+import { buildContours, smoothPath, SUMMIT, type Point } from './contours';
+import './survey.css';
+
+type Waypoint = Point & {
+  /** Label offset from the waypoint, and which side the text grows from. */
+  dx: number;
+  dy: number;
+  anchor: 'start' | 'middle' | 'end';
+};
+
+// One waypoint per tier, Basecamp first. The route zigzags up the slope in hairpins.
+const WAYPOINTS: readonly Waypoint[] = [
+  { x: 110, y: 590, dx: -4, dy: 38, anchor: 'start' },
+  { x: 250, y: 545, dx: 16, dy: 34, anchor: 'start' },
+  { x: 200, y: 470, dx: 0, dy: -24, anchor: 'middle' },
+  { x: 350, y: 440, dx: 16, dy: 10, anchor: 'start' },
+  { x: 300, y: 365, dx: -16, dy: 8, anchor: 'end' },
+  { x: 460, y: 350, dx: 16, dy: 10, anchor: 'start' },
+  { x: 420, y: 285, dx: -16, dy: 8, anchor: 'end' },
+  { x: 560, y: 265, dx: 6, dy: 40, anchor: 'start' },
+  { x: SUMMIT.x, y: SUMMIT.y, dx: 22, dy: -14, anchor: 'start' },
+];
+
+const CONTOURS = buildContours();
+const ROUTE = smoothPath(WAYPOINTS);
+
+// Each tier marker appears as the line reaches it (by straight-line distance along the route).
+const TOTAL_MS = 2800;
+const START_MS = 300;
+const legs = WAYPOINTS.slice(1).map((p, i) => {
+  const from = WAYPOINTS[i] as Waypoint;
+  return Math.hypot(p.x - from.x, p.y - from.y);
+});
+const length = legs.reduce((a, b) => a + b, 0);
+const DELAYS = WAYPOINTS.map((_, i) => {
+  const along = legs.slice(0, i).reduce((a, b) => a + b, 0);
+  return Math.round(START_MS + (along / length) * TOTAL_MS * 0.9);
+});
+
+/**
+ * The hero: a survey sheet with the nine-tier route drawn across it. The line draws itself once on
+ * load and the tier markers appear as it reaches them; with reduced motion it simply is complete.
+ */
+export function RouteMap() {
+  return (
+    <svg
+      className="route-map size-full overflow-visible"
+      viewBox="0 0 900 760"
+      preserveAspectRatio="xMaxYMid meet"
+      role="img"
+      aria-label="A map with a route climbing through nine ranks, from Basecamp at the bottom left to Summit at the top."
+    >
+      <g fill="none" stroke="var(--line-strong)" strokeLinejoin="round">
+        {CONTOURS.map((c, i) => (
+          <path key={i} d={c.d} strokeWidth={c.major ? 1.6 : 0.9} opacity={c.major ? 0.9 : 0.65} />
+        ))}
+      </g>
+
+      <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <path className="route-line" pathLength={1} d={ROUTE} stroke="var(--bg)" strokeWidth={12} />
+        <path
+          className="route-line"
+          pathLength={1}
+          d={ROUTE}
+          stroke="var(--accent)"
+          strokeWidth={5}
+        />
+      </g>
+
+      {WAYPOINTS.map((p, i) => {
+        const tier = RANK_TIERS[i];
+        if (!tier) return null;
+        const summit = i === WAYPOINTS.length - 1;
+        return (
+          <g
+            key={tier.id}
+            className="route-flag"
+            style={{ '--delay': `${DELAYS[i]}ms` } as CSSProperties}
+          >
+            {summit ? (
+              <>
+                <circle
+                  cx={p.x}
+                  cy={p.y}
+                  r={17}
+                  fill="#C8F25A"
+                  stroke="var(--text)"
+                  strokeWidth={3}
+                />
+                <path
+                  d={`M${p.x - 8} ${p.y + 6}l5-9 4 6 2-3 3 6`}
+                  fill="none"
+                  stroke="#0D0F14"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </>
+            ) : (
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={8}
+                fill="var(--surface)"
+                stroke="var(--text)"
+                strokeWidth={3}
+              />
+            )}
+            <g className="hidden md:block" aria-hidden="true">
+              <text
+                x={p.x + p.dx}
+                y={p.y + p.dy}
+                textAnchor={p.anchor}
+                className="route-label"
+                fill="var(--text)"
+                stroke="var(--bg)"
+                strokeWidth={7}
+                strokeLinejoin="round"
+                paintOrder="stroke"
+              >
+                {tier.label}
+              </text>
+            </g>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
