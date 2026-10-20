@@ -1,12 +1,50 @@
+import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { Tabs, type TabItem } from '@/components/ui/Tabs';
+import { RANK_TIERS } from '@/lib/api/types';
+import { useMyRank } from '../api';
 import { RankHeader } from '../components/RankHeader';
+import { TierBoardTab } from '../components/TierBoardTab';
 import { TierMountain } from '../components/TierMountain';
 
-/** Rank & leaderboards: where you stand, then the mountain. */
+type TabId = 'mountain' | 'tier' | 'global';
+
+const TABS: readonly TabItem<TabId>[] = [
+  { id: 'mountain', label: 'Mountain' },
+  { id: 'tier', label: 'Tier board' },
+  { id: 'global', label: 'Global' },
+];
+
+/**
+ * Rank & leaderboards. The URL says which tab is open, so links and refresh work:
+ * `/app/ranks` is the mountain, `/app/ranks/RIDGE` is that tier's board, `?tab=global` the overall one.
+ */
 export default function RanksPage() {
+  const { tier: tierParam } = useParams();
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const rank = useMyRank();
+
+  const tier = RANK_TIERS.find((t) => t.id === tierParam?.toUpperCase());
+  const tab: TabId = tier ? 'tier' : params.get('tab') === 'global' ? 'global' : 'mountain';
+
+  function open(next: TabId) {
+    const target =
+      next === 'tier'
+        ? `/app/ranks/${rank.data?.tier ?? 'BASECAMP'}`
+        : next === 'global'
+          ? '/app/ranks?tab=global'
+          : '/app/ranks';
+    void navigate(target, { replace: true });
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
       <RankHeader />
-      <TierMountain />
+      <Tabs tabs={TABS} value={tab} onChange={open} label="Rank views">
+        {tab === 'mountain' && <TierMountain />}
+        {tab === 'tier' && tier && <TierBoardTab tier={tier.id} />}
+        {tab === 'global' && <p className="text-soft">The global board is coming next.</p>}
+      </Tabs>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import type { Ref } from 'react';
 import { User } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { formatNumber } from '@/lib/utils/format';
@@ -25,6 +26,8 @@ type LeaderboardTableProps = {
    * stretched card is filled by its list instead of by blank space. Needs a flex parent.
    */
   stretch?: boolean;
+  /** Ref to the signed-in user's row, e.g. to watch whether it is on screen. */
+  ownRowRef?: Ref<HTMLTableRowElement>;
   className?: string;
 };
 
@@ -34,6 +37,7 @@ export function LeaderboardTable({
   currentUserId,
   caption,
   stretch = false,
+  ownRowRef,
   className,
 }: LeaderboardTableProps) {
   const hasLevel = rows.some((r) => r.level !== undefined);
@@ -59,6 +63,7 @@ export function LeaderboardTable({
             return (
               <tr
                 key={`${row.position}-${row.userId}`}
+                ref={own ? ownRowRef : undefined}
                 aria-current={own ? 'true' : undefined}
                 className={cn('border-b border-line last:border-0', own && 'bg-surface-2')}
               >

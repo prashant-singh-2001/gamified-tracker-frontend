@@ -82,7 +82,7 @@ const routes: RouteObject[] = [
           { path: 'ranks', ...page(() => import('@/features/ranks/pages/RanksPage')) },
           {
             path: 'ranks/:tier',
-            ...page(() => import('@/features/ranks/pages/TierLeaderboardPage')),
+            ...page(() => import('@/features/ranks/pages/RanksPage')),
           },
           { path: 'stats', ...page(() => import('@/features/stats/pages/StatsPage')) },
           { path: 'coach', ...page(() => import('@/features/coach/pages/WeeklyCoachPage')) },
