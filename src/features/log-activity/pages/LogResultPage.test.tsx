@@ -1,8 +1,8 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import type { Streak } from '@/features/activities/types';
-import type { LevelUpEvent } from '@/features/notifications/types';
+import type { LogOutcome } from '../outcome';
 import type { WeeklyReport } from '@/features/stats/types';
 import { qk } from '@/lib/api/queryKeys';
 import { serverToday, toServerDateTime } from '@/lib/utils/serverTime';
@@ -57,22 +57,25 @@ type Opts = {
   log?: ActivityLogResponse;
   /** Seed the cache like a just-finished POST, instead of fetching by id. */
   seeded?: boolean;
-  events?: LevelUpEvent[];
+  /** Answers in order; the last one repeats. Default: always PENDING. */
+  outcomes?: LogOutcome[];
   streaks?: Streak[];
 };
 
 function renderResult(opts: Opts = {}) {
   const log = opts.log ?? baseLog;
-  const calls = { logById: 0, notifications: 0 };
+  const calls = { logById: 0, outcome: 0 };
   signIn(7, 'USER');
   server.use(
     http.get('*/api/activitylog/:id', () => {
       calls.logById += 1;
       return HttpResponse.json(log);
     }),
-    http.get('*/api/notifications', () => {
-      calls.notifications += 1;
-      return HttpResponse.json(opts.events ?? []);
+    http.get('*/api/activitylog/:id/outcome', () => {
+      const answers = opts.outcomes ?? [PENDING];
+      const answer = answers[Math.min(calls.outcome, answers.length - 1)];
+      calls.outcome += 1;
+      return HttpResponse.json(answer);
     }),
     http.get('*/api/activitylog/streaks/user/:id', () =>
       HttpResponse.json(
@@ -102,15 +105,19 @@ function renderResult(opts: Opts = {}) {
   return calls;
 }
 
-const levelUp = (overrides: Partial<LevelUpEvent> = {}): LevelUpEvent => ({
-  id: 1,
-  activityId: 5,
-  oldLevel: 7,
+const PENDING: LogOutcome = {
+  status: 'PENDING',
+  xpApplied: null,
+  leveledUp: null,
+  newLevel: null,
+  previousLevel: null,
+};
+const applied = (overrides: Partial<LogOutcome> = {}): LogOutcome => ({
+  status: 'APPLIED',
+  xpApplied: 135,
+  leveledUp: true,
   newLevel: 8,
-  totalXp: 900,
-  currentLevelXp: 20,
-  read: false,
-  createdAt: toServerDateTime(new Date(LOGGED_AT.getTime() + 3_000)),
+  previousLevel: 7,
   ...overrides,
 });
 
@@ -137,27 +144,35 @@ describe('Log Result — outcomes', () => {
     expect(calls.logById).toBe(1);
   });
 
-  it('switches to the level-up header, with real levels, once the notification arrives', async () => {
-    renderResult({ seeded: true, events: [levelUp()] });
+  it('switches to the level-up header, with the activity levels, once the XP is applied', async () => {
+    renderResult({ seeded: true, outcomes: [applied()] });
 
     expect(await screen.findByRole('heading', { name: 'Level 8!' })).toBeInTheDocument();
     expect(screen.getByText('Studying: level 7 → 8')).toBeInTheDocument();
   });
 
-  it('ignores level-ups from other activities and from before this log', async () => {
-    renderResult({
+  it('keeps asking while the XP is still being applied, then shows the level-up', async () => {
+    const calls = renderResult({ seeded: true, outcomes: [PENDING, applied()] });
+
+    expect(await screen.findByRole('heading', { name: 'Activity logged' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Level 8!' }, { timeout: 8_000 }),
+    ).toBeInTheDocument();
+    expect(calls.outcome).toBe(2);
+  });
+
+  it('stays on the plain header when the XP was applied without a level-up', async () => {
+    const calls = renderResult({
       seeded: true,
-      events: [
-        levelUp({ activityId: 99 }),
-        levelUp({ createdAt: toServerDateTime(new Date(LOGGED_AT.getTime() - 60_000)) }),
-      ],
+      outcomes: [applied({ leveledUp: false, newLevel: 7, previousLevel: 7 })],
     });
 
     await screen.findByRole('heading', { name: 'Activity logged' });
+    await waitFor(() => expect(calls.outcome).toBe(1));
     expect(screen.queryByRole('heading', { name: /Level \d+!/ })).not.toBeInTheDocument();
   });
 
-  it('shows pending review calmly: XP on hold, only Done, and never looks for a level-up', async () => {
+  it('shows pending review calmly: XP on hold, only Done, and never asks for an outcome', async () => {
     const calls = renderResult({
       seeded: true,
       log: { ...baseLog, reviewStatus: 'FLAGGED', xpEarned: 1200 },
@@ -169,7 +184,7 @@ describe('Log Result — outcomes', () => {
     expect(screen.getByRole('link', { name: 'Done' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Log another' })).not.toBeInTheDocument();
     expect(screen.queryByText(/^\+.* XP$/)).not.toBeInTheDocument(); // no success counter
-    expect(calls.notifications).toBe(0);
+    expect(calls.outcome).toBe(0);
   });
 
   it('says no XP was awarded for a rejected log', async () => {

@@ -26,6 +26,7 @@ export const qk = {
     byId: (logId: number | string) => ['activityLog', logId] as const,
     streaks: (userId: number) => ['activityLog', 'streaks', userId] as const,
     flagged: () => ['activityLog', 'flagged'] as const,
+    outcome: (logId: number) => ['activityLog', 'outcome', logId] as const,
   },
   analytics: {
     all: ['analytics'] as const,
@@ -50,7 +51,6 @@ export const qk = {
   notifications: {
     all: ['notifications'] as const,
     list: () => ['notifications', 'list'] as const,
-    levelUpFor: (logId: number) => ['notifications', 'levelUpFor', logId] as const,
     unreadCount: () => ['notifications', 'unreadCount'] as const,
   },
 } as const;
