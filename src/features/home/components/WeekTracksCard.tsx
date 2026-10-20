@@ -27,6 +27,7 @@ function Change({ value }: { value: number }) {
   );
 }
 
+/** Seven-day chart that fills the card, with the live streaks as tiles pinned to the bottom. */
 export function WeekTracksCard() {
   const report = useWeeklyReport();
   const streaks = useStreaks();
@@ -55,7 +56,7 @@ export function WeekTracksCard() {
   const fresh = week.currentWeekXp === 0 && week.previousWeekXp === 0;
 
   return (
-    <Card className="flex flex-col gap-5">
+    <Card className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="font-display text-xl font-extrabold">This week</h2>
@@ -69,33 +70,45 @@ export function WeekTracksCard() {
         </div>
       </div>
 
-      <WeekStrip days={fresh ? [] : week.dailyBreakdown} />
-      {fresh && (
-        <p className="text-center text-sm text-soft">Log an activity to start your week.</p>
-      )}
+      <div className="flex min-h-0 flex-1 flex-col">
+        <WeekStrip
+          days={fresh ? [] : week.dailyBreakdown}
+          fill
+          emptyMessage="Log an activity to start your week."
+        />
+      </div>
 
       {alive.length > 0 && (
-        <ul className="flex flex-col gap-2 border-t border-line pt-4" aria-label="Active streaks">
-          {alive.map((s) => (
-            <li key={s.activityId} className="flex flex-wrap items-center justify-between gap-2">
-              <span className="flex items-center gap-3">
-                <StreakPill count={s.currentStreak} />
-                <span className="text-[15px]">
-                  {names.get(s.activityId) ?? `Activity #${s.activityId}`}
+        <ul
+          className="mt-auto grid grid-cols-2 gap-3 border-t border-line pt-6 xl:grid-cols-3"
+          aria-label="Active streaks"
+        >
+          {alive.map((s) => {
+            const name = names.get(s.activityId);
+            return (
+              <li
+                key={s.activityId}
+                className="flex flex-col gap-2 rounded-xl border border-line bg-surface-2 p-4"
+              >
+                <span className="flex items-center gap-3">
+                  <StreakPill count={s.currentStreak} />
+                  <span className="truncate text-[15px] font-medium">
+                    {name ?? `Activity #${s.activityId}`}
+                  </span>
                 </span>
-              </span>
-              {loggedToday(s) ? (
-                <span className="text-sm text-muted">Done for today</span>
-              ) : (
-                <Link
-                  to={`/app/log${names.has(s.activityId) ? `?activity=${encodeURIComponent(names.get(s.activityId) ?? '')}` : ''}`}
-                  className="inline-flex min-h-11 items-center text-sm font-medium text-streak no-underline hover:underline"
-                >
-                  Log today to keep it
-                </Link>
-              )}
-            </li>
-          ))}
+                {loggedToday(s) ? (
+                  <span className="text-sm text-muted">Done for today</span>
+                ) : (
+                  <Link
+                    to={`/app/log${name ? `?activity=${encodeURIComponent(name)}` : ''}`}
+                    className="inline-flex min-h-11 items-center text-sm font-medium text-streak no-underline hover:underline"
+                  >
+                    Log today to keep it
+                  </Link>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </Card>

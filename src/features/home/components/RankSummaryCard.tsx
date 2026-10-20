@@ -9,6 +9,7 @@ import { LeaderboardTable, type LeaderboardRow } from '@/components/ui/Leaderboa
 import { TierBadge } from '@/components/ui/TierBadge';
 import { useMyRank, useMyTierBoard } from '@/features/ranks/api';
 import { neighboursOf } from '@/features/ranks/neighbours';
+import { nextTierUp, tierProgress } from '@/features/ranks/tierProgress';
 import { isNotFound } from '@/lib/api/errors';
 import { getTierInfo, RANK_TIERS } from '@/lib/api/types';
 import { useUserId } from '@/lib/auth/useUserId';
@@ -27,19 +28,65 @@ function Unranked() {
           <p className="text-sm text-muted">Log your first activity to get ranked.</p>
         </div>
       </div>
-      <ol className="flex flex-col-reverse gap-1.5" aria-label="Rank tiers, Basecamp to Summit">
+      <ol className="flex flex-col-reverse gap-2" aria-label="Rank tiers, Basecamp to Summit">
         {RANK_TIERS.map((t) => (
-          <li key={t.id} className="flex items-center justify-between gap-3 text-sm">
-            <TierBadge tier={t.id} size={20} showLabel />
-            <span className="font-mono text-xs text-faint">{t.band}</span>
+          <li key={t.id} className="flex items-center gap-3 text-sm">
+            <span className="w-32 shrink-0">
+              <TierBadge tier={t.id} size={20} showLabel />
+            </span>
+            {/* Where the tier sits in the population: left edge = best, right edge = worst. */}
+            <span aria-hidden="true" className="relative h-1.5 flex-1 rounded-full bg-line">
+              <span
+                className="absolute inset-y-0 rounded-full bg-rank/60"
+                style={{ left: `${t.topFrom * 100}%`, width: `${(t.topTo - t.topFrom) * 100}%` }}
+              />
+            </span>
+            <span className="w-20 shrink-0 text-right font-mono text-xs text-faint">{t.band}</span>
           </li>
         ))}
       </ol>
-      <Link to="/app/log" className={buttonClass('primary')}>
-        Log your first activity
-      </Link>
-      <p className="text-sm text-muted">Rank updates every few minutes.</p>
+      <div className="mt-auto flex flex-col gap-3">
+        <Link to="/app/log" className={buttonClass('primary')}>
+          Log your first activity
+        </Link>
+        <p className="text-sm text-muted">Rank updates every few minutes.</p>
+      </div>
     </Card>
+  );
+}
+
+/** Slim bar: how far up the tier band the user is, with the next tier as the goal. */
+function TierBand({
+  progress,
+  tier,
+}: {
+  progress: number;
+  tier: Parameters<typeof tierProgress>[0];
+}) {
+  const info = getTierInfo(tier.tier);
+  const next = nextTierUp(tier.tier);
+  return (
+    <div className="flex flex-col gap-2">
+      <div
+        role="progressbar"
+        aria-label={`Progress through ${info.label}, towards ${next ? next.label : 'the top'}`}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(progress * 100)}
+        className="h-1.5 w-full overflow-hidden rounded-full bg-line"
+      >
+        <div
+          className="h-full rounded-full bg-rank transition-[width] duration-500"
+          style={{ width: `${progress * 100}%` }}
+        />
+      </div>
+      <div className="flex justify-between font-mono text-xs text-muted">
+        <span>
+          {info.label} · {info.band}
+        </span>
+        <span>{next ? `→ ${next.label}` : 'Top tier'}</span>
+      </div>
+    </div>
   );
 }
 
@@ -65,9 +112,11 @@ export function RankSummaryCard() {
   const tier = getTierInfo(card.tier);
 
   let rows: LeaderboardRow[] = [];
+  let alone = false;
   if (board.data && userId !== undefined) {
     const near = neighboursOf(board.data, userId, NEIGHBOURS);
     if (near) {
+      alone = board.data.length === 1;
       rows = near.map((m) => ({
         position: m.withinRankPosition,
         userId: m.userId,
@@ -89,7 +138,7 @@ export function RankSummaryCard() {
   }
 
   return (
-    <Card className="flex flex-col gap-4">
+    <Card className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <TierBadge tier={card.tier} size={36} />
@@ -101,37 +150,55 @@ export function RankSummaryCard() {
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <Badge tone="rank">{formatTopPercent(card.position, card.totalUsers)}</Badge>
+          <Badge tone="rank">{formatTopPercent(card.percentile)}</Badge>
           <span className="font-mono text-sm text-soft">
             #{formatNumber(card.position)} of {formatNumber(card.totalUsers)}
           </span>
         </div>
       </div>
 
-      {board.isPending ? (
-        <CardSkeleton label="Loading your neighbours" />
-      ) : board.isError ? (
-        <ErrorPanel
-          error={board.error}
-          title="Couldn't load the board"
-          onRetry={() => void board.refetch()}
-        />
-      ) : (
-        <LeaderboardTable
-          rows={rows}
-          currentUserId={userId}
-          caption={`${tier.label} tier, around your position`}
-        />
-      )}
+      <TierBand progress={tierProgress(card)} tier={card} />
 
-      <p className="text-sm text-muted">Rank updates every few minutes.</p>
-      <Link
-        to="/app/ranks"
-        className="inline-flex min-h-11 items-center gap-2 self-start text-[15px] font-medium text-accent no-underline hover:underline"
-      >
-        Open ranks &amp; leaderboards
-        <ArrowRight className="size-4" aria-hidden="true" />
-      </Link>
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        {board.isPending ? (
+          <CardSkeleton label="Loading your neighbours" className="flex-1" />
+        ) : board.isError ? (
+          <ErrorPanel
+            error={board.error}
+            title="Couldn't load the board"
+            onRetry={() => void board.refetch()}
+          />
+        ) : (
+          <>
+            <LeaderboardTable
+              rows={rows}
+              currentUserId={userId}
+              caption={`${tier.label} tier, around your position`}
+              stretch
+            />
+            {alone && (
+              // Fills the rest of the card so a lone climber's tier never looks broken.
+              <div className="grid flex-1 place-items-center py-6 text-center">
+                <div className="flex flex-col items-center gap-2 text-soft">
+                  <Mountain className="size-8 text-faint" aria-hidden="true" />
+                  <p>You&apos;re the only climber in {tier.label} for now.</p>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="mt-auto flex flex-col gap-1">
+        <p className="text-sm text-muted">Rank updates every few minutes.</p>
+        <Link
+          to="/app/ranks"
+          className="inline-flex min-h-11 items-center gap-2 self-start text-[15px] font-medium text-accent no-underline hover:underline"
+        >
+          Open ranks &amp; leaderboards
+          <ArrowRight className="size-4" aria-hidden="true" />
+        </Link>
+      </div>
     </Card>
   );
 }

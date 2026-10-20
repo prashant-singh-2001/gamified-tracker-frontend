@@ -283,3 +283,48 @@ describe('Log Activity — rejected saves', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/in the future/i);
   });
 });
+
+describe('Log Activity — opened from Home with a sentence', () => {
+  const draft: ActivityLogRequest = {
+    activityName: 'Studying',
+    startTime: '2026-10-19T07:30:00',
+    endTime: '2026-10-19T09:00:00',
+    notes: null,
+  };
+
+  it('runs the draft straight away and lands on the confirm card', async () => {
+    natural({ status: 'PARSED', draft, interpretation: 'Logged 90 min of Study' });
+    renderSheet('/app/log?text=Studied%20for%2090%20min');
+
+    expect(await screen.findByText(/Logged 90 min of Study/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Log it' })).toBeInTheDocument();
+  });
+
+  it('asks the backend exactly once', async () => {
+    let calls = 0;
+    server.use(
+      http.post('*/api/activitylog/natural', () => {
+        calls += 1;
+        return HttpResponse.json({
+          draft,
+          interpretation: 'Logged 90 min of Study',
+          status: 'PARSED',
+          nameResolution: null,
+          suggestions: null,
+        });
+      }),
+    );
+    renderSheet('/app/log?text=Studied%20for%2090%20min');
+
+    await screen.findByText(/Logged 90 min of Study/);
+    expect(calls).toBe(1);
+  });
+
+  it('keeps the sentence in the box when it needs more detail', async () => {
+    natural({ status: 'NEEDS_CLARIFICATION', interpretation: 'How long did you study for?' });
+    renderSheet('/app/log?text=Studied');
+
+    expect(await screen.findByText('How long did you study for?')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Tell us what you did' })).toHaveValue('Studied');
+  });
+});

@@ -3,7 +3,7 @@ import { api } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
 import { qk } from '@/lib/api/queryKeys';
 import type { RankCard, RankTier } from '@/lib/api/types';
-import type { RankTierMember } from './types';
+import type { RankDistribution, RankTierMember } from './types';
 
 /** The caller's own rank card. 404 means "no rank yet" (ranks recompute every few minutes). */
 export function useMyRank() {
@@ -37,5 +37,14 @@ export function useTierBoard(tier: RankTier, size: number) {
           params: { page: 0, size },
         })
       ).data,
+  });
+}
+
+/** How many users sit in each tier (`GET /api/ranks`). */
+export function useRankDistribution() {
+  return useQuery({
+    queryKey: qk.ranks.ladder(),
+    queryFn: async () => (await api.get<RankDistribution[]>(endpoints.ranks.all)).data,
+    staleTime: 60_000,
   });
 }

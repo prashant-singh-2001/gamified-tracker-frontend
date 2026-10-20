@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { DailyXp } from '@/features/stats/types';
 import { cn } from '@/lib/utils/cn';
-import { formatXp } from '@/lib/utils/format';
+import { formatNumber, formatXp } from '@/lib/utils/format';
 import { serverToday } from '@/lib/utils/serverTime';
 
 type WeekStripProps = {
@@ -9,11 +9,20 @@ type WeekStripProps = {
   days: readonly DailyXp[];
   /** XP just earned today: today's bar grows from `total - addedXp` to `total`. */
   addedXp?: number;
+  /** Shown centred over the placeholder bars when `days` is empty. */
+  emptyMessage?: string;
+  /**
+   * Fill the parent's height (at least 220px) and add value labels and gridlines. Without it the
+   * strip is a compact 80px sparkline.
+   */
+  fill?: boolean;
   className?: string;
 };
 
-const BAR_AREA = 80; // px
+const COMPACT_HEIGHT = 80; // px
 const MIN_BAR = 4; // px, so a zero day still shows a stub
+const TALLEST = 88; // % of the chart a full bar reaches, leaving room for its value label
+const GRIDLINES = [0, 33.3, 66.6]; // % from the top of the chart
 
 function weekday(date: string): string {
   // `date` is a UTC calendar day, so format it in UTC or it can slip a day in other zones.
@@ -24,7 +33,13 @@ function weekday(date: string): string {
 }
 
 /** Seven daily XP bars with today outlined. Labels are the real weekdays of the rolling week. */
-export function WeekStrip({ days, addedXp = 0, className }: WeekStripProps) {
+export function WeekStrip({
+  days,
+  addedXp = 0,
+  fill = false,
+  emptyMessage,
+  className,
+}: WeekStripProps) {
   const today = serverToday();
   const [grown, setGrown] = useState(addedXp <= 0);
 
@@ -34,23 +49,34 @@ export function WeekStrip({ days, addedXp = 0, className }: WeekStripProps) {
     return () => cancelAnimationFrame(frame);
   }, [addedXp]);
 
+  const wrapper = cn(fill && 'flex h-full min-h-[240px] flex-col', className);
+  const chart = cn('relative', fill && 'min-h-[220px] flex-1');
+  const chartStyle = fill ? undefined : { height: COMPACT_HEIGHT };
+
   if (days.length === 0) {
     return (
-      <ul
-        className={cn('flex items-end justify-between gap-2', className)}
-        aria-label="No activity yet this week"
-      >
-        {Array.from({ length: 7 }, (_, i) => (
-          <li key={i} className="flex flex-1 flex-col items-center gap-2">
-            <div
-              aria-hidden="true"
-              className="w-full rounded-md border border-dashed border-line-strong"
-              style={{ height: BAR_AREA / 2 }}
-            />
-            <span className="text-xs text-faint">·</span>
-          </li>
-        ))}
-      </ul>
+      <div className={wrapper}>
+        <div className={chart} style={chartStyle}>
+          <ul
+            className="flex h-full items-stretch justify-between gap-2"
+            aria-label="No activity yet this week"
+          >
+            {Array.from({ length: 7 }, (_, i) => (
+              <li key={i} className="flex-1">
+                <div
+                  aria-hidden="true"
+                  className="h-full w-full rounded-md border border-dashed border-line-strong"
+                />
+              </li>
+            ))}
+          </ul>
+          {emptyMessage && (
+            <p className="absolute inset-0 grid place-items-center px-6 text-center text-soft">
+              <span className="rounded-xl bg-surface px-4 py-2">{emptyMessage}</span>
+            </p>
+          )}
+        </div>
+      </div>
     );
   }
 
@@ -61,36 +87,66 @@ export function WeekStrip({ days, addedXp = 0, className }: WeekStripProps) {
   const max = Math.max(1, ...days.map((d) => d.totalXpEarned));
 
   return (
-    <ul className={cn('flex items-end justify-between gap-2', className)}>
-      {days.map((day) => {
-        const isToday = day.date === today;
-        const height = Math.max(MIN_BAR, (shown(day) / max) * BAR_AREA);
-        return (
+    <div className={wrapper}>
+      <div className={chart} style={chartStyle}>
+        {fill &&
+          GRIDLINES.map((top) => (
+            <div
+              key={top}
+              aria-hidden="true"
+              className="absolute inset-x-0 border-t border-line/60"
+              style={{ top: `${top}%` }}
+            />
+          ))}
+        <ul className="relative flex h-full items-stretch justify-between gap-2">
+          {days.map((day) => {
+            const isToday = day.date === today;
+            const percent = (shown(day) / max) * TALLEST;
+            return (
+              <li
+                key={day.date}
+                className="relative flex-1"
+                aria-label={`${weekday(day.date)}${isToday ? ' (today)' : ''}: ${formatXp(day.totalXpEarned)}`}
+              >
+                <div
+                  aria-hidden="true"
+                  className={cn(
+                    'absolute inset-x-0 bottom-0 rounded-md bg-accent transition-[height] duration-500',
+                    day.totalXpEarned === 0 && 'bg-line',
+                    isToday && 'outline-2 outline-offset-2 outline-accent/60',
+                  )}
+                  style={{ height: `${percent}%`, minHeight: MIN_BAR }}
+                />
+                {fill && (
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'absolute inset-x-0 text-center font-mono text-xs',
+                      isToday ? 'font-bold text-text' : 'text-soft',
+                    )}
+                    style={{ bottom: `calc(${percent}% + ${MIN_BAR + 6}px)` }}
+                  >
+                    {formatNumber(Math.round(day.totalXpEarned))}
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+      <ul aria-hidden="true" className="mt-2 flex justify-between gap-2">
+        {days.map((day) => (
           <li
             key={day.date}
-            className="flex flex-1 flex-col items-center gap-2"
-            aria-label={`${weekday(day.date)}${isToday ? ' (today)' : ''}: ${formatXp(day.totalXpEarned)}`}
+            className={cn(
+              'flex-1 text-center font-mono text-xs',
+              day.date === today ? 'font-bold text-text' : 'text-muted',
+            )}
           >
-            <div className="flex w-full items-end" style={{ height: BAR_AREA }}>
-              <div
-                aria-hidden="true"
-                className={cn(
-                  'w-full rounded-md bg-accent transition-[height] duration-500',
-                  day.totalXpEarned === 0 && 'bg-line',
-                  isToday && 'outline-2 outline-offset-2 outline-accent/60',
-                )}
-                style={{ height }}
-              />
-            </div>
-            <span
-              aria-hidden="true"
-              className={cn('font-mono text-xs', isToday ? 'font-bold text-text' : 'text-muted')}
-            >
-              {weekday(day.date).slice(0, 3)}
-            </span>
+            {weekday(day.date).slice(0, 3)}
           </li>
-        );
-      })}
-    </ul>
+        ))}
+      </ul>
+    </div>
   );
 }
