@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
@@ -147,17 +147,51 @@ describe('AuthPage: sign up face', () => {
     expect(router.state.location.pathname).toBe('/register');
   });
 
-  it('reads a bare 500 as a possible duplicate email and offers to log in instead', async () => {
-    server.use(http.post('*/auth/register', () => new HttpResponse(null, { status: 500 })));
+  it('puts a duplicate email under the Email field and offers to log in instead', async () => {
+    server.use(
+      http.post('*/auth/register', () =>
+        HttpResponse.json({ status: 409, detail: 'Email already registered' }, { status: 409 }),
+      ),
+    );
     renderRoutes(routes, '/register');
     await fillSignup();
 
-    expect(await signupFace().findByRole('alert')).toHaveTextContent(
-      'If this email is already registered, log in instead.',
-    );
+    expect(
+      await signupFace().findByText('An account with this email already exists.'),
+    ).toBeVisible();
+    expect(signupFace().getAllByRole('alert')).toHaveLength(1); // only the field message
     await userEvent.click(signupFace().getByRole('button', { name: 'Log in instead' }));
 
     expect(loginFace().getByLabelText('Email')).toHaveValue('ada@example.com');
+  });
+
+  it("shows the server's per-field messages under each field, not above the form", async () => {
+    server.use(
+      http.post('*/auth/register', () =>
+        HttpResponse.json(
+          {
+            status: 400,
+            detail: 'email should be formatted and required; password is required',
+            errors: {
+              email: 'email should be formatted and required',
+              password: 'password is required',
+            },
+          },
+          { status: 400 },
+        ),
+      ),
+    );
+    renderRoutes(routes, '/register');
+    await fillSignup();
+
+    const email = signupFace().getByLabelText('Email');
+    await waitFor(() => expect(email).toHaveAccessibleDescription(/should be formatted/));
+    expect(signupFace().getByLabelText('Password')).toHaveAccessibleDescription(
+      'password is required',
+    );
+    expect(email).toBeInvalid();
+    // the joined `detail` is not repeated as a second, form-level message
+    expect(signupFace().queryByText(/email should be formatted and required; password/)).toBeNull();
   });
 
   it('hints at password strength without blocking the form', async () => {

@@ -2,8 +2,8 @@ import type { UseFormReturn } from 'react-hook-form';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
-import { getErrorMessage } from '@/lib/api/errors';
-import type { LoginForm } from '../schemas';
+import { fieldErrors, getErrorMessage } from '@/lib/api/errors';
+import { LOGIN_FIELDS, type LoginForm } from '../schemas';
 
 type LoginFaceProps = {
   form: UseFormReturn<LoginForm>;
@@ -46,7 +46,7 @@ export function LoginFace({
       )}
 
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
-        {error != null && (
+        {error != null && !fieldErrors(error, LOGIN_FIELDS) && (
           <p role="alert" className="text-sm text-danger">
             {getErrorMessage(error)}
           </p>

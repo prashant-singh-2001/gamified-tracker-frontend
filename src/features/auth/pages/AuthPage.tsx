@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldPath, type FieldValues, type UseFormReturn } from 'react-hook-form';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
+import { fieldErrors, toApiError } from '@/lib/api/errors';
 import { useAuthStore } from '@/lib/auth/authStore';
 import { homeFor, safeNext } from '@/lib/auth/redirect';
 import { useLogin, useRegister } from '../api';
@@ -9,7 +10,29 @@ import { FlipCard, type Face } from '../components/FlipCard';
 import { LoginFace } from '../components/LoginFace';
 import { AuthMap } from '../components/AuthMap';
 import { SignupFace } from '../components/SignupFace';
-import { loginSchema, registerSchema, type LoginForm, type RegisterForm } from '../schemas';
+import {
+  LOGIN_FIELDS,
+  REGISTER_FIELDS,
+  loginSchema,
+  registerSchema,
+  type LoginForm,
+  type RegisterForm,
+} from '../schemas';
+
+/** Puts the server's per-field messages under the fields they belong to. */
+function showFieldErrors<T extends FieldValues>(
+  form: UseFormReturn<T>,
+  err: unknown,
+  known: readonly string[],
+) {
+  const fields = fieldErrors(err, known);
+  if (!fields) return;
+  for (const [name, message] of Object.entries(fields)) {
+    form.setError(name as FieldPath<T>, { type: 'server', message });
+  }
+}
+
+export const EMAIL_TAKEN = 'An account with this email already exists.';
 
 /**
  * /login and /register render this same card; the route decides which face is up and flipping
@@ -34,10 +57,22 @@ export default function AuthPage() {
   };
 
   const submitLogin = loginForm.handleSubmit((values) =>
-    login.mutate(values, { onSuccess: afterAuth }),
+    login.mutate(values, {
+      onSuccess: afterAuth,
+      onError: (err) => showFieldErrors(loginForm, err, LOGIN_FIELDS),
+    }),
   );
   const submitSignup = signupForm.handleSubmit((values) =>
-    registerUser.mutate(values, { onSuccess: afterAuth }),
+    registerUser.mutate(values, {
+      onSuccess: afterAuth,
+      onError: (err) => {
+        if (toApiError(err).status === 409) {
+          signupForm.setError('email', { type: 'server', message: EMAIL_TAKEN });
+          return;
+        }
+        showFieldErrors(signupForm, err, REGISTER_FIELDS);
+      },
+    }),
   );
 
   const { setFocus: focusLogin } = loginForm;

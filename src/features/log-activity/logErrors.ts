@@ -15,8 +15,20 @@ export type LogError = { target: LogErrorTarget; message: string };
  *  - "Activity name is required" and the 409 for an inactive activity
  */
 export function mapLogError(err: unknown): LogError {
-  const { status, message } = toApiError(err);
+  const { status, message, problem } = toApiError(err);
   const text = message.toLowerCase();
+
+  // Validation 400s name the offending fields; that beats guessing from the wording.
+  const fields = problem?.errors;
+  if (status === 400 && typeof fields === 'object' && fields !== null) {
+    if ('activityName' in fields) return { target: 'activityName', message };
+    if ('startTime' in fields || 'endTime' in fields) {
+      return {
+        target: 'ended',
+        message: 'That time is in the future. Pick a time that has passed.',
+      };
+    }
+  }
 
   if (text.includes('exceeds the maximum') || text.includes("today's total")) {
     return { target: 'duration', message };

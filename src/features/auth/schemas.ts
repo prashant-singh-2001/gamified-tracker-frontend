@@ -17,5 +17,8 @@ export const registerSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+export const LOGIN_FIELDS = ['email', 'password'] as const;
+export const REGISTER_FIELDS = ['firstName', 'lastName', 'email', 'password'] as const;
+
 export type LoginForm = z.infer<typeof loginSchema>;
 export type RegisterForm = z.infer<typeof registerSchema>;

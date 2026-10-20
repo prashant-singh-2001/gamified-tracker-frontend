@@ -43,4 +43,18 @@ describe('mapLogError', () => {
   it('falls back to a form-level message', () => {
     expect(mapLogError(rejected(500, 'boom')).target).toBe('form');
   });
+
+  it('trusts the field names the API sends before reading the wording', () => {
+    const withFields = (errors: Record<string, string>) =>
+      new AxiosError('failed', 'ERR', undefined, undefined, {
+        status: 400,
+        data: { detail: 'x', errors },
+      } as AxiosResponse);
+
+    expect(mapLogError(withFields({ activityName: 'Activity name is required' })).target).toBe(
+      'activityName',
+    );
+    expect(mapLogError(withFields({ endTime: 'whatever the server says' })).target).toBe('ended');
+    expect(mapLogError(withFields({ startTime: 'whatever the server says' })).target).toBe('ended');
+  });
 });
