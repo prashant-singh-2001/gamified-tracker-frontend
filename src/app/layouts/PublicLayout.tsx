@@ -3,15 +3,18 @@ import { Logo } from '@/components/Logo';
 import { useAuthStore } from '@/lib/auth/authStore';
 import { homeFor } from '@/lib/auth/redirect';
 import { GITHUB_URL } from '@/lib/constants';
+import { cn } from '@/lib/utils/cn';
 
 export default function PublicLayout() {
   const user = useAuthStore((s) => s.user);
   const { pathname } = useLocation();
   // The auth card carries its own Log in / Sign up switch.
   const onAuthCard = pathname === '/login' || pathname === '/register';
+  // The landing page has its own look (see theme-survey.css); everything else keeps the app theme.
+  const onLanding = pathname === '/';
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className={cn('flex min-h-screen flex-col', onLanding && 'theme-survey')}>
       <header className="mx-auto flex w-full max-w-[1240px] flex-wrap items-center justify-between gap-4 px-6 py-6">
         <Logo />
         <nav aria-label="Main" className="flex flex-wrap items-center gap-2">
