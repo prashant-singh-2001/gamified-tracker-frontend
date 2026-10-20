@@ -35,7 +35,11 @@ const routes: RouteObject[] = [
           {
             // One card, two faces: the route decides which face is up.
             ...page(() => import('@/features/auth/pages/AuthPage')),
-            children: [{ path: '/login' }, { path: '/register' }],
+            // The card (AuthPage) renders both faces itself, so the child routes only claim the paths.
+            children: [
+              { path: '/login', element: <></> },
+              { path: '/register', element: <></> },
+            ],
           },
         ],
       },

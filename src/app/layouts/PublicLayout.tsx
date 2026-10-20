@@ -10,11 +10,12 @@ export default function PublicLayout() {
   const { pathname } = useLocation();
   // The auth card carries its own Log in / Sign up switch.
   const onAuthCard = pathname === '/login' || pathname === '/register';
-  // The landing page has its own look (see theme-survey.css); everything else keeps the app theme.
-  const onLanding = pathname === '/';
+  // The landing page and the sign-in card share the survey-sheet look (theme-survey.css); the 404
+  // page keeps the app theme.
+  const surveyTheme = pathname === '/' || onAuthCard;
 
   return (
-    <div className={cn('flex min-h-screen flex-col', onLanding && 'theme-survey')}>
+    <div className={cn('flex min-h-screen flex-col', surveyTheme && 'theme-survey')}>
       <header className="mx-auto flex w-full max-w-[1240px] flex-wrap items-center justify-between gap-4 px-6 py-6">
         <Logo />
         <nav aria-label="Main" className="flex flex-wrap items-center gap-2">

@@ -56,3 +56,9 @@
     mask-composite: intersect;
   }
 }
+
+/* A map that is not the hero (e.g. behind the sign-in card) is simply complete. */
+.route-map[data-static] .route-line,
+.route-map[data-static] .route-flag {
+  animation: none;
+}

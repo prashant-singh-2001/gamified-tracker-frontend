@@ -7,7 +7,7 @@ import { homeFor, safeNext } from '@/lib/auth/redirect';
 import { useLogin, useRegister } from '../api';
 import { FlipCard, type Face } from '../components/FlipCard';
 import { LoginFace } from '../components/LoginFace';
-import { RankTrailBackdrop } from '../components/RankTrailBackdrop';
+import { AuthMap } from '../components/AuthMap';
 import { SignupFace } from '../components/SignupFace';
 import { loginSchema, registerSchema, type LoginForm, type RegisterForm } from '../schemas';
 
@@ -71,30 +71,56 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="relative isolate flex min-h-[calc(100dvh-12rem)] items-center justify-center px-4 py-8">
-      <RankTrailBackdrop />
-      <FlipCard
-        face={face}
-        front={
-          <LoginFace
-            form={loginForm}
-            onSubmit={submitLogin}
-            pending={login.isPending}
-            error={login.error}
-            sessionEnded={sessionEnded}
-            onFlip={flip}
-          />
-        }
-        back={
-          <SignupFace
-            form={signupForm}
-            onSubmit={submitSignup}
-            pending={registerUser.isPending}
-            error={registerUser.error}
-            onFlip={flip}
-          />
-        }
-      />
+    <div className="relative isolate min-h-[calc(100dvh-12rem)] flex items-center overflow-hidden">
+      {/* Behind the card on small screens; beside it from 1280px, where the caption joins it. */}
+      <div
+        aria-hidden="true"
+        className="map-fade pointer-events-none absolute inset-0 -z-10 opacity-40 xl:inset-y-0 xl:right-0 xl:left-auto xl:w-[62%] xl:opacity-100"
+      >
+        <AuthMap face={face} />
+      </div>
+
+      <div className="mx-auto flex w-full max-w-[1240px] justify-center px-4 py-8 xl:justify-start xl:px-6">
+        <FlipCard
+          face={face}
+          front={
+            <LoginFace
+              form={loginForm}
+              onSubmit={submitLogin}
+              pending={login.isPending}
+              error={login.error}
+              sessionEnded={sessionEnded}
+              onFlip={flip}
+            />
+          }
+          back={
+            <SignupFace
+              form={signupForm}
+              onSubmit={submitSignup}
+              pending={registerUser.isPending}
+              error={registerUser.error}
+              onFlip={flip}
+            />
+          }
+        />
+      </div>
+
+      <p
+        key={face}
+        className="auth-caption pointer-events-none absolute top-16 left-[44%] hidden max-w-[26rem] font-display text-[2.75rem] leading-[0.95] font-extrabold xl:block"
+      >
+        {face === 'back' ? (
+          <>
+            <span className="block">You start at Basecamp.</span>
+            <span className="block">Eight ranks above you.</span>
+          </>
+        ) : (
+          <>
+            <span className="block">Your streak is waiting.</span>
+            <span className="block">So is your rank.</span>
+          </>
+        )}
+      </p>
     </div>
   );
 }

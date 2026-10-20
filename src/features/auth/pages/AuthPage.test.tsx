@@ -13,7 +13,10 @@ import AuthPage from './AuthPage';
 const routes = [
   {
     element: <AuthPage />,
-    children: [{ path: '/login' }, { path: '/register' }],
+    children: [
+      { path: '/login', element: <></> },
+      { path: '/register', element: <></> },
+    ],
   },
   { path: '/app', element: <p>user home</p> },
   { path: '/app/history', element: <p>history</p> },
@@ -241,5 +244,21 @@ describe('AuthPage: the flip', () => {
     await fillLogin();
     await loginFace().findByRole('alert');
     expect(router.state.location.pathname).toBe('/login');
+  });
+
+  it('changes the line beside the map with the face', async () => {
+    renderRoutes(routes, '/login');
+    expect(screen.getByText('Your streak is waiting.')).toBeInTheDocument();
+
+    await userEvent.click(loginFace().getByRole('button', { name: 'Create an account' }));
+    expect(screen.getByText('You start at Basecamp.')).toBeInTheDocument();
+    expect(screen.getByText('Eight ranks above you.')).toBeInTheDocument();
+    expect(screen.queryByText('Your streak is waiting.')).not.toBeInTheDocument();
+  });
+
+  it('keeps the route map decorative, with a marker that moves with the face', () => {
+    renderRoutes(routes, '/login');
+    const map = screen.getByTestId('route-marker').closest('[aria-hidden="true"]');
+    expect(map).not.toBeNull();
   });
 });

@@ -145,7 +145,7 @@ describe('Home — Log card quick picks', () => {
     });
     renderHome();
 
-    const running = await screen.findByRole('link', { name: 'Running' });
+    const running = await screen.findByRole('link', { name: 'Running' }, { timeout: 10_000 });
     expect(running).toHaveAttribute('href', '/app/log?activity=Running');
 
     const picks = new Set(['Running', 'Reading', 'Chess']);

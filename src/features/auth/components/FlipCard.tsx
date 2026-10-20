@@ -9,7 +9,8 @@ type FlipCardProps = {
   back: ReactNode;
 };
 
-const FACE_LOOK = 'rounded-[20px] border border-line bg-surface p-6 sm:p-8';
+const FACE_LOOK =
+  'rounded-[18px] border border-line-strong bg-surface p-6 shadow-[0_24px_48px_-28px_rgb(14_27_38/0.35)] sm:p-8';
 
 /**
  * Two faces on one card. The face that is down is `inert` and hidden from screen readers, and the

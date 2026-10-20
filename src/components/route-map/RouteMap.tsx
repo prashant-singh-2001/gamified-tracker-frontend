@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode, Ref } from 'react';
 import { RANK_TIERS } from '@/lib/api/types';
 import { buildContours, smoothPath, SUMMIT, type Point } from './contours';
 import './survey.css';
@@ -43,10 +43,20 @@ const DELAYS = WAYPOINTS.map((_, i) => {
  * The hero: a survey sheet with the nine-tier route drawn across it. The line draws itself once on
  * load and the tier markers appear as it reaches them; with reduced motion it simply is complete.
  */
-export function RouteMap() {
+type RouteMapProps = {
+  /** Draw the route and pop the markers in on load. Off, the map is simply complete. */
+  animate?: boolean;
+  /** The accent route line, for callers that measure it (e.g. to move a marker along it). */
+  routeRef?: Ref<SVGPathElement>;
+  /** Extra layers drawn on top, in map coordinates. */
+  children?: ReactNode;
+};
+
+export function RouteMap({ animate = true, routeRef, children }: RouteMapProps) {
   return (
     <svg
       className="route-map size-full overflow-visible"
+      data-static={animate ? undefined : true}
       viewBox="0 0 900 760"
       preserveAspectRatio="xMaxYMid meet"
       role="img"
@@ -62,6 +72,7 @@ export function RouteMap() {
         <path className="route-line" pathLength={1} d={ROUTE} stroke="var(--bg)" strokeWidth={12} />
         <path
           className="route-line"
+          ref={routeRef}
           pathLength={1}
           d={ROUTE}
           stroke="var(--accent)"
@@ -126,6 +137,7 @@ export function RouteMap() {
           </g>
         );
       })}
+      {children}
     </svg>
   );
 }
