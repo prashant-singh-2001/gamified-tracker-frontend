@@ -5,20 +5,12 @@ import { ErrorPanel } from '@/components/ui/ErrorPanel';
 import { WeekStrip } from '@/components/ui/WeekStrip';
 import { formatDuration, formatXp } from '@/lib/utils/format';
 import { useWeeklyReport, useXpOverTime } from '../api';
+import { dayLabel } from '../dates';
 import { useReadout } from '../useReadout';
 import { StatCard } from './StatCard';
 
 const DAY = 86_400_000;
 const QUESTION = 'Am I doing more than last week?';
-
-function dayLabel(date: string) {
-  return new Date(`${date}T00:00:00Z`).toLocaleDateString('en-US', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    timeZone: 'UTC',
-  });
-}
 
 const sevenDaysBefore = (date: string) =>
   new Date(new Date(`${date}T00:00:00Z`).getTime() - 7 * DAY).toISOString().slice(0, 10);

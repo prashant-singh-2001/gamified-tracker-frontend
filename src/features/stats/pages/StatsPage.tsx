@@ -1,3 +1,4 @@
+import { TrendCard } from '../components/TrendCard';
 import { WeekCard } from '../components/WeekCard';
 
 /**
@@ -15,6 +16,7 @@ export default function StatsPage() {
       </header>
       <div className="grid grid-cols-1 gap-6 *:min-w-0 lg:grid-cols-2">
         <WeekCard />
+        <TrendCard />
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
 import { qk } from '@/lib/api/queryKeys';
@@ -25,6 +25,7 @@ export function useXpOverTime(days: number) {
   const userId = useUserId();
   return useQuery({
     queryKey: qk.analytics.xpOverTime(userId ?? 0, days),
+    placeholderData: keepPreviousData, // switching range keeps the chart and its chips up
     enabled: userId !== undefined,
     queryFn: async () =>
       (
