@@ -1,27 +1,7 @@
 import type { CSSProperties, ReactNode, Ref } from 'react';
 import { RANK_TIERS } from '@/lib/api/types';
-import { buildContours, smoothPath, SUMMIT, type Point } from './contours';
+import { buildContours, smoothPath, WAYPOINTS, type Waypoint } from './contours';
 import './survey.css';
-
-type Waypoint = Point & {
-  /** Label offset from the waypoint, and which side the text grows from. */
-  dx: number;
-  dy: number;
-  anchor: 'start' | 'middle' | 'end';
-};
-
-// One waypoint per tier, Basecamp first. The route zigzags up the slope in hairpins.
-const WAYPOINTS: readonly Waypoint[] = [
-  { x: 110, y: 590, dx: -4, dy: 38, anchor: 'start' },
-  { x: 250, y: 545, dx: 16, dy: 34, anchor: 'start' },
-  { x: 200, y: 470, dx: 0, dy: -24, anchor: 'middle' },
-  { x: 350, y: 440, dx: 16, dy: 10, anchor: 'start' },
-  { x: 300, y: 365, dx: -16, dy: 8, anchor: 'end' },
-  { x: 460, y: 350, dx: 16, dy: 10, anchor: 'start' },
-  { x: 420, y: 285, dx: -16, dy: 8, anchor: 'end' },
-  { x: 560, y: 265, dx: 6, dy: 40, anchor: 'start' },
-  { x: SUMMIT.x, y: SUMMIT.y, dx: 22, dy: -14, anchor: 'start' },
-];
 
 const CONTOURS = buildContours();
 const ROUTE = smoothPath(WAYPOINTS);
