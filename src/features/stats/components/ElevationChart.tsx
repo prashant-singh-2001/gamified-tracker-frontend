@@ -1,7 +1,7 @@
-import { useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { formatDuration, formatXp } from '@/lib/utils/format';
 import { dayLabel } from '../dates';
 import type { DailyXp } from '../types';
+import { useScrub } from '../useScrub';
 
 const W = 600;
 const H = 200;
@@ -20,7 +20,6 @@ type ElevationChartProps = {
  * contour rules behind it, and a flag on the best day. Pointer or arrow keys scrub along it.
  */
 export function ElevationChart({ days, onActive }: ElevationChartProps) {
-  const [index, setIndex] = useState<number | null>(null);
   const n = days.length;
   const max = Math.max(1, ...days.map((d) => d.totalXpEarned));
   const x = (i: number) => (n === 1 ? W / 2 : (i / (n - 1)) * W);
@@ -38,33 +37,9 @@ export function ElevationChart({ days, onActive }: ElevationChartProps) {
   const percentX = (i: number) => `${(x(i) / W) * 100}%`;
   const percentY = (xp: number) => `${(y(xp) / H) * 100}%`;
 
-  function move(next: number | null) {
-    setIndex(next);
-    onActive(next === null ? null : (days[next] ?? null));
-  }
-
-  function fromPointer(e: PointerEvent<HTMLDivElement>) {
-    const box = e.currentTarget.getBoundingClientRect();
-    const share = Math.min(1, Math.max(0, (e.clientX - box.left) / box.width));
-    move(Math.round(share * (n - 1)));
-  }
-
-  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
-    const current = index ?? best;
-    const next =
-      e.key === 'ArrowRight' || e.key === 'ArrowUp'
-        ? Math.min(n - 1, current + 1)
-        : e.key === 'ArrowLeft' || e.key === 'ArrowDown'
-          ? Math.max(0, current - 1)
-          : e.key === 'Home'
-            ? 0
-            : e.key === 'End'
-              ? n - 1
-              : null;
-    if (next === null) return;
-    e.preventDefault();
-    move(next);
-  }
+  const { index, props } = useScrub(n, best, (next) =>
+    onActive(next === null ? null : (days[next] ?? null)),
+  );
 
   const active = index === null ? undefined : days[index];
   const bestDay = days[best];
@@ -73,7 +48,6 @@ export function ElevationChart({ days, onActive }: ElevationChartProps) {
     <div className="flex flex-col gap-2">
       <div
         role="slider"
-        tabIndex={0}
         aria-label="Daily XP"
         aria-valuemin={0}
         aria-valuemax={n - 1}
@@ -83,12 +57,7 @@ export function ElevationChart({ days, onActive }: ElevationChartProps) {
             ? `${dayLabel(active.date)}: ${formatXp(active.totalXpEarned)}, ${formatDuration(active.totalDurationMinutes)}`
             : undefined
         }
-        onKeyDown={onKeyDown}
-        onFocus={() => move(index ?? best)}
-        onBlur={() => move(null)}
-        onPointerMove={fromPointer}
-        onPointerDown={fromPointer}
-        onPointerLeave={() => move(null)}
+        {...props}
         className="relative h-[200px] w-full cursor-crosshair touch-pan-y rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-text"
       >
         <svg
