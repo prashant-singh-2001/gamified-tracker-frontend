@@ -3,7 +3,7 @@ import { Bell } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { useMyRank } from '@/features/ranks/api';
 import { useUnreadCount } from '@/features/notifications/api';
-import { useFirstName } from '@/lib/auth/useFirstName';
+import { useMe } from '@/lib/auth/useMe';
 import { useHideOnScroll } from '@/lib/hooks/useHideOnScroll';
 import { cn } from '@/lib/utils/cn';
 import { formatGreetingDate, greetingFor } from '@/lib/utils/greeting';
@@ -14,7 +14,7 @@ export function FloatingNav() {
   const hidden = useHideOnScroll();
   const rank = useMyRank();
   const unread = useUnreadCount().data ?? 0;
-  const firstName = useFirstName();
+  const firstName = useMe().data?.firstName ?? null;
   const now = new Date();
 
   return (

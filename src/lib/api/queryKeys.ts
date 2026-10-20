@@ -1,5 +1,8 @@
 /** Central TanStack Query key factory. Always build keys here, never inline. */
 export const qk = {
+  users: {
+    me: () => ['users', 'me'] as const,
+  },
   ranks: {
     all: ['ranks'] as const,
     me: () => ['ranks', 'me'] as const,

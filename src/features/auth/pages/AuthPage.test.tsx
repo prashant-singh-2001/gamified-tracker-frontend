@@ -4,7 +4,6 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import type { Role } from '@/lib/api/types';
 import { useAuthStore } from '@/lib/auth/authStore';
-import { profileStorage } from '@/lib/auth/profileStorage';
 import { tokenStorage } from '@/lib/auth/tokenStorage';
 import { makeAccessToken, renderRoutes } from '@/test/helpers';
 import { server } from '@/test/server';
@@ -158,7 +157,7 @@ describe('AuthPage: log in face', () => {
 });
 
 describe('AuthPage: sign up face', () => {
-  it('signs up, lands on /app and remembers the first name for this user only', async () => {
+  it('signs up and lands on /app', async () => {
     server.use(
       http.post('*/auth/register', () =>
         HttpResponse.json({
@@ -171,10 +170,10 @@ describe('AuthPage: sign up face', () => {
     await fillSignup();
 
     expect(await screen.findByText('user home')).toBeInTheDocument();
-    expect(profileStorage.get()).toEqual({ userId: 12, firstName: 'Ada' });
+    expect(useAuthStore.getState().user).toEqual({ id: 12, role: 'USER' });
   });
 
-  it('shows the server message and stores nothing when sign-up fails', async () => {
+  it('shows the server message and stays signed out when sign-up fails', async () => {
     server.use(
       http.post('*/auth/register', () =>
         HttpResponse.json({ detail: 'Too many attempts' }, { status: 429 }),
@@ -184,7 +183,7 @@ describe('AuthPage: sign up face', () => {
     await fillSignup();
 
     expect(await signupFace().findByRole('alert')).toHaveTextContent('Too many attempts');
-    expect(profileStorage.get()).toBeNull();
+    expect(useAuthStore.getState().user).toBeNull();
     expect(router.state.location.pathname).toBe('/register');
   });
 

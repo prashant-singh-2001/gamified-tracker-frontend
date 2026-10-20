@@ -57,6 +57,12 @@ export function refreshSession(): Promise<string> {
 
 /** Called once on app start: restores a session from the stored refresh token, if any. */
 export async function bootSession(): Promise<void> {
+  // Earlier versions kept the first name in the browser; it now comes from GET /users/me.
+  try {
+    localStorage.removeItem('etram.profile');
+  } catch {
+    /* storage unavailable: nothing to clean */
+  }
   if (!tokenStorage.getRefreshToken()) {
     useAuthStore.getState().clear();
     return;
