@@ -1,4 +1,4 @@
-import { Link, Outlet } from 'react-router';
+import { Link, Outlet, useLocation } from 'react-router';
 import { Logo } from '@/components/Logo';
 import { useAuthStore } from '@/lib/auth/authStore';
 import { homeFor } from '@/lib/auth/redirect';
@@ -6,6 +6,9 @@ import { GITHUB_URL } from '@/lib/constants';
 
 export default function PublicLayout() {
   const user = useAuthStore((s) => s.user);
+  const { pathname } = useLocation();
+  // The auth card carries its own Log in / Sign up switch.
+  const onAuthCard = pathname === '/login' || pathname === '/register';
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -27,7 +30,7 @@ export default function PublicLayout() {
             >
               Open app
             </Link>
-          ) : (
+          ) : onAuthCard ? null : (
             <Link
               to="/login"
               className="flex min-h-11 items-center rounded-full border border-line-strong px-[18px] text-[15px] font-medium no-underline hover:bg-surface-2"

@@ -1,0 +1,98 @@
+/*
+ * Log in / Sign up card: one card, two faces. The stage holds the perspective and animates its
+ * height to the face that is up; the inner layer rotates. `data-turned` stays false until the first
+ * flip so nothing animates on page load.
+ */
+.flip-lift {
+  width: 100%;
+  max-width: 28rem;
+}
+.flip-lift[data-turned='true'][data-face='back'] {
+  animation: flip-lift-a 600ms ease-out;
+}
+.flip-lift[data-turned='true'][data-face='front'] {
+  animation: flip-lift-b 600ms ease-out;
+}
+
+.flip-stage {
+  position: relative;
+  perspective: 1200px;
+}
+.flip-stage[data-turned='true'] {
+  transition: height 600ms ease-out;
+}
+
+.flip-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 600ms ease-out;
+}
+.flip-stage[data-face='back'] .flip-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-face {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.flip-face-back {
+  transform: rotateY(180deg);
+}
+
+/* Two identical keyframes under different names, so each direction restarts the lift. */
+@keyframes flip-lift-a {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgb(0 0 0 / 0));
+  }
+  50% {
+    transform: scale(1.02);
+    filter: drop-shadow(0 28px 36px rgb(0 0 0 / 0.55));
+  }
+}
+@keyframes flip-lift-b {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgb(0 0 0 / 0));
+  }
+  50% {
+    transform: scale(1.02);
+    filter: drop-shadow(0 28px 36px rgb(0 0 0 / 0.55));
+  }
+}
+
+/* Reduced motion: no rotation, no lift; the faces cross-fade in 150 ms. */
+@media (prefers-reduced-motion: reduce) {
+  .flip-lift[data-turned='true'] {
+    animation: none;
+  }
+  .flip-stage[data-turned='true'] {
+    transition: none;
+  }
+  .flip-inner {
+    transition: none;
+  }
+  .flip-stage[data-face='back'] .flip-inner {
+    transform: none;
+  }
+  .flip-face-back {
+    transform: none;
+  }
+  .flip-face {
+    -webkit-backface-visibility: visible;
+    backface-visibility: visible;
+    transition: opacity 150ms linear;
+  }
+  .flip-stage[data-face='front'] .flip-face-back,
+  .flip-stage[data-face='back'] .flip-face-front {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
