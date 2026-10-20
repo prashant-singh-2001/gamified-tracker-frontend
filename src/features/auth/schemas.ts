@@ -17,8 +17,22 @@ export const registerSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+export const forgotSchema = z.object({ email });
+
+export const resetSchema = z
+  .object({
+    newPassword: z.string().min(1, 'Password is required'),
+    confirm: z.string().min(1, 'Type the password again'),
+  })
+  .refine((v) => v.newPassword === v.confirm, {
+    path: ['confirm'],
+    message: 'The passwords do not match',
+  });
+
 export const LOGIN_FIELDS = ['email', 'password'] as const;
 export const REGISTER_FIELDS = ['firstName', 'lastName', 'email', 'password'] as const;
 
 export type LoginForm = z.infer<typeof loginSchema>;
 export type RegisterForm = z.infer<typeof registerSchema>;
+export type ForgotForm = z.infer<typeof forgotSchema>;
+export type ResetForm = z.infer<typeof resetSchema>;

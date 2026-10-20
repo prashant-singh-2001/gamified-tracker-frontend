@@ -33,6 +33,10 @@ const routes: RouteObject[] = [
             ],
           },
           {
+            path: '/reset-password',
+            ...page(() => import('@/features/auth/pages/ResetPasswordPage')),
+          },
+          {
             // One card, two faces: the route decides which face is up.
             ...page(() => import('@/features/auth/pages/AuthPage')),
             // The card (AuthPage) renders both faces itself, so the child routes only claim the paths.

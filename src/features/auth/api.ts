@@ -29,6 +29,23 @@ export function useRegister() {
   });
 }
 
+/** Always answers the same way, whether or not the address has an account. */
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: async (email: string) =>
+      (await api.post<{ message: string }>(endpoints.auth.forgot, { email })).data,
+  });
+}
+
+/** 204 on success; 400 for a token that is unknown, expired or already used. */
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: async (body: { token: string; newPassword: string }) => {
+      await api.post(endpoints.auth.reset, body);
+    },
+  });
+}
+
 /** Clears tokens, the auth store and every cached query, then returns to the landing page. */
 export function useLogout() {
   const queryClient = useQueryClient();

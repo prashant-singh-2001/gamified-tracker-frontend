@@ -110,9 +110,50 @@ describe('AuthPage: log in face', () => {
     return screen.findByText('Your session ended, please log in again.');
   });
 
-  it('has no forgot-password link, since the backend has no such endpoint', () => {
+  it('opens the reset view with the typed email and answers the same way for any address', async () => {
+    let body: unknown;
+    server.use(
+      http.post('*/auth/forgot', async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json(
+          { message: 'If an account exists for that email, a reset link has been sent.' },
+          { status: 202 },
+        );
+      }),
+    );
     renderRoutes(routes, '/login');
-    expect(screen.queryByText(/forgot/i)).not.toBeInTheDocument();
+    await userEvent.type(loginFace().getByLabelText('Email'), 'ada@example.com');
+    await userEvent.click(loginFace().getByRole('button', { name: 'Forgot password?' }));
+
+    const reset = within(screen.getByRole('region', { name: 'Reset your password' }));
+    expect(reset.getByLabelText('Email')).toHaveValue('ada@example.com');
+    await userEvent.click(reset.getByRole('button', { name: 'Send reset link' }));
+
+    expect(await reset.findByRole('status')).toHaveTextContent(
+      'If an account exists for ada@example.com, a reset link is on its way. It works for 30 minutes.',
+    );
+    expect(body).toEqual({ email: 'ada@example.com' });
+
+    await userEvent.click(reset.getByRole('button', { name: 'Back to log in' }));
+    expect(loginFace().getByLabelText('Email')).toBeInTheDocument();
+  });
+
+  it('opens the reset view straight away from ?forgot=1 (the "request a new link" target)', () => {
+    renderRoutes(routes, '/login?forgot=1');
+    expect(screen.getByRole('region', { name: 'Reset your password' })).toBeInTheDocument();
+  });
+
+  it('checks the email before asking the server', async () => {
+    renderRoutes(routes, '/login?forgot=1');
+    const reset = within(screen.getByRole('region', { name: 'Reset your password' }));
+    await userEvent.click(reset.getByRole('button', { name: 'Send reset link' }));
+    expect(await reset.findByText('Enter a valid email address')).toBeInTheDocument();
+  });
+
+  it('says so after a password was changed', () => {
+    const { router } = renderRoutes(routes, '/login');
+    void router.navigate('/login', { state: { reason: 'password-reset' }, replace: true });
+    return screen.findByText('Password changed. Log in with your new password.');
   });
 });
 

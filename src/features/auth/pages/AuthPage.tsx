@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, type FieldPath, type FieldValues, type UseFormReturn } from 'react-hook-form';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
@@ -8,7 +8,8 @@ import { homeFor, safeNext } from '@/lib/auth/redirect';
 import { useLogin, useRegister } from '../api';
 import { FlipCard, type Face } from '../components/FlipCard';
 import { LoginFace } from '../components/LoginFace';
-import { AuthMap } from '../components/AuthMap';
+import { AuthStage } from '../components/AuthStage';
+import { ForgotFace } from '../components/ForgotFace';
 import { SignupFace } from '../components/SignupFace';
 import {
   LOGIN_FIELDS,
@@ -44,7 +45,14 @@ export default function AuthPage() {
   const next = safeNext(params.get('next'));
   const navigate = useNavigate();
   const face: Face = location.pathname === '/register' ? 'back' : 'front';
-  const sessionEnded = (location.state as { reason?: string } | null)?.reason === 'session-ended';
+  const reason = (location.state as { reason?: string } | null)?.reason;
+  const notice =
+    reason === 'session-ended'
+      ? 'Your session ended, please log in again.'
+      : reason === 'password-reset'
+        ? 'Password changed. Log in with your new password.'
+        : null;
+  const [forgot, setForgot] = useState(() => params.get('forgot') === '1');
 
   const login = useLogin();
   const registerUser = useRegister();
@@ -99,63 +107,64 @@ export default function AuthPage() {
     }
     login.reset();
     registerUser.reset();
+    setForgot(false);
     void navigate(
       { pathname: goingToSignup ? '/register' : '/login', search: location.search },
       { replace: true },
     );
   };
 
-  return (
-    <div className="relative isolate min-h-[calc(100dvh-12rem)] flex items-center overflow-hidden">
-      {/* Behind the card on small screens; beside it from 1280px, where the caption joins it. */}
-      <div
-        aria-hidden="true"
-        className="map-fade pointer-events-none absolute inset-0 -z-10 opacity-40 xl:inset-y-0 xl:right-0 xl:left-auto xl:w-[62%] xl:opacity-100"
-      >
-        <AuthMap face={face} />
-      </div>
+  const caption = (
+    <p
+      key={face}
+      className="auth-caption pointer-events-none absolute top-16 left-[44%] hidden max-w-[26rem] font-display text-[2.75rem] leading-[0.95] font-extrabold xl:block"
+    >
+      {face === 'back' ? (
+        <>
+          <span className="block">You start at Basecamp.</span>
+          <span className="block">Eight ranks above you.</span>
+        </>
+      ) : (
+        <>
+          <span className="block">Your streak is waiting.</span>
+          <span className="block">So is your rank.</span>
+        </>
+      )}
+    </p>
+  );
 
-      <div className="mx-auto flex w-full max-w-[1240px] justify-center px-4 py-8 xl:justify-start xl:px-6">
-        <FlipCard
-          face={face}
-          front={
+  return (
+    <AuthStage face={face} caption={caption}>
+      <FlipCard
+        face={face}
+        front={
+          forgot ? (
+            <ForgotFace
+              initialEmail={loginForm.getValues('email') ?? ''}
+              onBack={() => setForgot(false)}
+            />
+          ) : (
             <LoginFace
               form={loginForm}
               onSubmit={submitLogin}
               pending={login.isPending}
               error={login.error}
-              sessionEnded={sessionEnded}
+              notice={notice}
               onFlip={flip}
+              onForgot={() => setForgot(true)}
             />
-          }
-          back={
-            <SignupFace
-              form={signupForm}
-              onSubmit={submitSignup}
-              pending={registerUser.isPending}
-              error={registerUser.error}
-              onFlip={flip}
-            />
-          }
-        />
-      </div>
-
-      <p
-        key={face}
-        className="auth-caption pointer-events-none absolute top-16 left-[44%] hidden max-w-[26rem] font-display text-[2.75rem] leading-[0.95] font-extrabold xl:block"
-      >
-        {face === 'back' ? (
-          <>
-            <span className="block">You start at Basecamp.</span>
-            <span className="block">Eight ranks above you.</span>
-          </>
-        ) : (
-          <>
-            <span className="block">Your streak is waiting.</span>
-            <span className="block">So is your rank.</span>
-          </>
-        )}
-      </p>
-    </div>
+          )
+        }
+        back={
+          <SignupFace
+            form={signupForm}
+            onSubmit={submitSignup}
+            pending={registerUser.isPending}
+            error={registerUser.error}
+            onFlip={flip}
+          />
+        }
+      />
+    </AuthStage>
   );
 }
