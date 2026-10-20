@@ -31,7 +31,29 @@ export type RankCard = {
   tierCutoffXp?: number;
   nextTier?: RankTier | null;
   xpToNextTier?: number | null;
+  /**
+   * Divisions and movement. Absent on a backend that predates them, so the screens fall back to
+   * tier-only wording. `division` 1 is the best of the three inside a tier.
+   */
+  division?: Division;
+  /** How far up the current division, 0-1. */
+  divisionProgress?: number;
+  /** Ordering score, XP with a 14-day half-life; `totalXp` is the lifetime figure. */
+  rankScore?: number;
+  /** The next step up (null at Summit I) and the XP away, never below 0. Approximate. */
+  nextDivisionTier?: RankTier | null;
+  nextDivision?: Division | null;
+  xpToNextDivision?: number | null;
+  /** Places gained (positive is up); null while there is no baseline yet. */
+  positionChange?: number | null;
+  previousTier?: RankTier | null;
+  previousDivision?: Division | null;
+  /** Compares tier and division, so it can disagree with `positionChange`. */
+  trend?: RankTrend | null;
 };
+
+export type Division = 1 | 2 | 3;
+export type RankTrend = 'NEW' | 'PROMOTED' | 'DEMOTED' | 'UP' | 'DOWN' | 'SAME';
 
 /** RFC 7807 body returned by every backend service (Spring ProblemDetail). */
 export type ProblemDetail = {
