@@ -30,7 +30,7 @@ export function LoginFace({
   return (
     <section aria-labelledby="login-title" className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
-        <h1 id="login-title" className="font-display text-3xl font-extrabold tracking-tight">
+        <h1 id="login-title" className="font-display text-[2.9rem] leading-[0.92] font-extrabold">
           Welcome back
         </h1>
         <p className="text-soft">Log in to keep your streak alive.</p>
@@ -64,7 +64,7 @@ export function LoginFace({
           error={errors.password?.message}
           {...register('password')}
         />
-        <Button type="submit" size="lg" loading={pending}>
+        <Button type="submit" size="lg" loading={pending} className="rounded-full">
           Log in
         </Button>
       </form>

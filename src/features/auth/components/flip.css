@@ -49,22 +49,22 @@
   0%,
   100% {
     transform: scale(1);
-    filter: drop-shadow(0 0 0 rgb(0 0 0 / 0));
+    filter: drop-shadow(0 0 0 rgb(14 27 38 / 0));
   }
   50% {
     transform: scale(1.02);
-    filter: drop-shadow(0 28px 36px rgb(0 0 0 / 0.55));
+    filter: drop-shadow(0 28px 36px rgb(14 27 38 / 0.28));
   }
 }
 @keyframes flip-lift-b {
   0%,
   100% {
     transform: scale(1);
-    filter: drop-shadow(0 0 0 rgb(0 0 0 / 0));
+    filter: drop-shadow(0 0 0 rgb(14 27 38 / 0));
   }
   50% {
     transform: scale(1.02);
-    filter: drop-shadow(0 28px 36px rgb(0 0 0 / 0.55));
+    filter: drop-shadow(0 28px 36px rgb(14 27 38 / 0.28));
   }
 }
 
@@ -94,5 +94,15 @@
   .flip-stage[data-face='back'] .flip-face-front {
     opacity: 0;
     pointer-events: none;
+  }
+}
+
+/* The line beside the map changes with the face; it fades in so the change is noticed. */
+.auth-caption {
+  animation: auth-caption-in 450ms ease-out 250ms both;
+}
+@keyframes auth-caption-in {
+  from {
+    opacity: 0;
   }
 }
