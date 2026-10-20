@@ -34,8 +34,8 @@ export function AnimatedNumber({ value, format = formatNumber, className }: Anim
     }
     const from = current.current;
     const start = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / DURATION);
+    const tick = () => {
+      const t = Math.min(1, Math.max(0, (performance.now() - start) / DURATION));
       const eased = 1 - (1 - t) ** 3;
       current.current = from + (value - from) * eased;
       setShown(current.current);

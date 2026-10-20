@@ -55,6 +55,8 @@ export function LeaderboardTable({
   const hasStep = rows.some((r) => r.division !== undefined && r.tier !== undefined);
   const hasMovement = rows.some((r) => r.movement);
   const hasScore = rows.some((r) => r.score !== undefined);
+  // With steps and movement as well, the Level column waits for a wider table so names keep room.
+  const crowded = hasStep || hasMovement;
 
   return (
     <div
@@ -68,7 +70,11 @@ export function LeaderboardTable({
             <th scope="col">Position</th>
             <th scope="col">Player</th>
             {hasStep && <th scope="col">Division</th>}
-            {hasLevel && <th scope="col">Level</th>}
+            {hasLevel && (
+              <th scope="col" className={cn(crowded && 'hidden @[480px]:table-cell')}>
+                Level
+              </th>
+            )}
             {hasMovement && <th scope="col">Movement</th>}
             <th scope="col">{hasScore ? 'Score' : 'XP'}</th>
           </tr>
@@ -113,7 +119,12 @@ export function LeaderboardTable({
                   </td>
                 )}
                 {hasLevel && (
-                  <td className="py-1.5 pr-3 text-right whitespace-nowrap font-mono text-sm text-muted">
+                  <td
+                    className={cn(
+                      'py-1.5 pr-3 text-right whitespace-nowrap font-mono text-sm text-muted',
+                      crowded && 'hidden @[480px]:table-cell',
+                    )}
+                  >
                     {row.level !== undefined ? `Lv ${row.level}` : ''}
                   </td>
                 )}

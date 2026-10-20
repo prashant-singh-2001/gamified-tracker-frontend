@@ -43,7 +43,13 @@ export function MovementChip({ movement, variant = 'card', className }: Movement
       <Icon className={variant === 'row' ? 'size-3.5' : 'size-4'} aria-hidden="true" />
       {variant === 'row' ? (
         <>
-          <span aria-hidden="true">{movement.short}</span>
+          {/* Words wait for a wider table; a number or sign is short enough everywhere. */}
+          <span
+            aria-hidden="true"
+            className={/^[+−]\d+$/.test(movement.short) ? undefined : 'hidden @[420px]:inline'}
+          >
+            {movement.short}
+          </span>
           <span className="sr-only">{movement.label}</span>
         </>
       ) : (

@@ -110,23 +110,23 @@ export function TierMountain() {
                 )}
                 style={{ height: ROW_H }}
               >
-                <span className="flex w-28 shrink-0 flex-col sm:w-36">
-                  <span className="font-display text-[1.7rem] leading-none font-bold">
-                    {tier.label}
+                <span
+                  className={cn('flex shrink-0 flex-col', own ? 'w-40 sm:w-48' : 'w-28 sm:w-36')}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="font-display text-[1.7rem] leading-none font-bold">
+                      {tier.label}
+                    </span>
+                    {own && mine?.division && (
+                      <>
+                        <DivisionSteps tier={tier.id} division={mine.division} width={26} />
+                        <span className="sr-only">, division {roman(mine.division)}</span>
+                      </>
+                    )}
                   </span>
                   <span className="text-sm text-muted">
                     {tier.band}
-                    {own && (
-                      <span className="inline-flex items-center gap-1.5 font-medium text-accent">
-                        {' · '}You are here
-                        {mine?.division && (
-                          <>
-                            <DivisionSteps tier={tier.id} division={mine.division} width={22} />
-                            <span className="sr-only">, division {roman(mine.division)}</span>
-                          </>
-                        )}
-                      </span>
-                    )}
+                    {own && <span className="font-medium text-accent"> · You are here</span>}
                   </span>
                 </span>
                 <span aria-hidden="true" className="flex min-w-0 flex-1 items-center">
