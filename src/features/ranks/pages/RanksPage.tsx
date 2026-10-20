@@ -3,6 +3,7 @@ import { Tabs, type TabItem } from '@/components/ui/Tabs';
 import { RANK_TIERS } from '@/lib/api/types';
 import { useMyRank } from '../api';
 import { RankHeader } from '../components/RankHeader';
+import { GlobalTab } from '../components/GlobalTab';
 import { TierBoardTab } from '../components/TierBoardTab';
 import { TierMountain } from '../components/TierMountain';
 
@@ -23,9 +24,16 @@ export default function RanksPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const rank = useMyRank();
+  const activity = Number(params.get('activity')) || null;
 
   const tier = RANK_TIERS.find((t) => t.id === tierParam?.toUpperCase());
   const tab: TabId = tier ? 'tier' : params.get('tab') === 'global' ? 'global' : 'mountain';
+
+  function chooseActivity(id: number | null) {
+    void navigate(id === null ? '/app/ranks?tab=global' : `/app/ranks?tab=global&activity=${id}`, {
+      replace: true,
+    });
+  }
 
   function open(next: TabId) {
     const target =
@@ -43,7 +51,7 @@ export default function RanksPage() {
       <Tabs tabs={TABS} value={tab} onChange={open} label="Rank views">
         {tab === 'mountain' && <TierMountain />}
         {tab === 'tier' && tier && <TierBoardTab tier={tier.id} />}
-        {tab === 'global' && <p className="text-soft">The global board is coming next.</p>}
+        {tab === 'global' && <GlobalTab activityId={activity} onActivityChange={chooseActivity} />}
       </Tabs>
     </div>
   );
