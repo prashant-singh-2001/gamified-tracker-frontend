@@ -1,0 +1,15 @@
+/* A new note fades in once when it replaces the old one. */
+@media (prefers-reduced-motion: no-preference) {
+  .coach-letter {
+    animation: coach-in 500ms ease-out both;
+  }
+}
+
+@keyframes coach-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { ArrowDown, ArrowUp } from 'lucide-react';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import { ErrorPanel } from '@/components/ui/ErrorPanel';
 import { WeekStrip } from '@/components/ui/WeekStrip';
@@ -7,6 +6,7 @@ import { formatDuration, formatXp } from '@/lib/utils/format';
 import { useWeeklyReport, useXpOverTime } from '../api';
 import { dayLabel } from '../dates';
 import { useReadout } from '../useReadout';
+import { Change } from './Change';
 import { StatCard } from './StatCard';
 
 const DAY = 86_400_000;
@@ -14,19 +14,6 @@ const QUESTION = 'Am I doing more than last week?';
 
 const sevenDaysBefore = (date: string) =>
   new Date(new Date(`${date}T00:00:00Z`).getTime() - 7 * DAY).toISOString().slice(0, 10);
-
-function Change({ value }: { value: number }) {
-  if (Math.abs(value) < 0.5) return <span>No change on the same days last week.</span>;
-  const up = value > 0;
-  const Icon = up ? ArrowUp : ArrowDown;
-  return (
-    <span className="inline-flex items-center gap-1">
-      <Icon className="size-4" aria-hidden="true" />
-      <span className="font-mono font-bold">{Math.round(Math.abs(value))}%</span>
-      {up ? 'up' : 'down'} on the same days last week
-    </span>
-  );
-}
 
 /** This week's XP against last week's, day by day, with last week as a dashed outline. */
 export function WeekCard() {
