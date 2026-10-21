@@ -22,6 +22,21 @@
   --streak: #c2500f;
   --rank: #1f7a8c;
 
+  /*
+   * Tier identity, one colour per altitude: valley green at Basecamp, cooling through lake blue and
+   * violet to the logo lime at Summit. Used for fills and glyphs only, always beside the tier name
+   * and a glyph whose height rises with the tier, so colour is never the only cue.
+   */
+  --tier-1: #8c9a6a;
+  --tier-2: #5f9d74;
+  --tier-3: #3b9c93;
+  --tier-4: #2f86a6;
+  --tier-5: #3f6fb3;
+  --tier-6: #5a5db8;
+  --tier-7: #7a52a6;
+  --tier-8: #a04a8f;
+  --tier-9: #c8f25a;
+
   --font-display: 'Sofia Sans Extra Condensed', 'Arial Narrow', system-ui, sans-serif;
   --font-body: 'Newsreader', Georgia, serif;
   /* Small data labels use the text face with lining, tabular figures; the condensed display face
@@ -71,4 +86,41 @@
   color-scheme: dark;
   background: var(--bg);
   color: var(--text);
+}
+
+/*
+ * Follows the system theme inside the signed-in app (AppLayout adds `theme-auto`). The landing
+ * page and sign-in card stay on the light sheet.
+ */
+@media (prefers-color-scheme: dark) {
+  .theme-survey.theme-auto {
+    --bg: #0e1b26;
+    --surface: #15283a;
+    --surface-2: #1b3246;
+    --line: #27404f;
+    --line-strong: #3a5667;
+    --text: #e9eeef;
+    --text-soft: #c3d0d6;
+    --text-muted: #9db0b9;
+    --text-faint: #8397a2;
+    --accent: #ff5c99;
+    --accent-ink: #0e1b26;
+    --danger: #ff8a80;
+    --xp: #ffb547;
+    --streak: #ff8a3d;
+    --rank: #7fc6d6;
+    --pending: #b4bcc9;
+    --logo-ring: rgb(233 238 239 / 0.2);
+
+    --tier-1: #a7b88a;
+    --tier-2: #7fbf96;
+    --tier-3: #5fbfb4;
+    --tier-4: #55a8c8;
+    --tier-5: #6f93d6;
+    --tier-6: #8a85dc;
+    --tier-7: #a98ad0;
+    --tier-8: #cf79b8;
+    --tier-9: #c8f25a;
+    color-scheme: dark;
+  }
 }

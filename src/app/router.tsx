@@ -70,10 +70,17 @@ const routes: RouteObject[] = [
             path: 'log/result/:logId',
             ...page(() => import('@/features/log-activity/pages/LogResultPage')),
           },
-          { path: 'history', ...page(() => import('@/features/history/pages/HistoryPage')) },
           {
-            path: 'history/:logId',
-            ...page(() => import('@/features/history/pages/LogDetailPage')),
+            path: 'history',
+            ...page(() => import('@/features/history/pages/HistoryPage')),
+            // A log opens as a sheet over the list, which keeps its filters.
+            children: [
+              { index: true },
+              {
+                path: ':logId',
+                ...page(() => import('@/features/history/pages/LogDetailPage')),
+              },
+            ],
           },
           {
             path: 'activities/:activityId',
@@ -82,7 +89,7 @@ const routes: RouteObject[] = [
           { path: 'ranks', ...page(() => import('@/features/ranks/pages/RanksPage')) },
           {
             path: 'ranks/:tier',
-            ...page(() => import('@/features/ranks/pages/TierLeaderboardPage')),
+            ...page(() => import('@/features/ranks/pages/RanksPage')),
           },
           { path: 'stats', ...page(() => import('@/features/stats/pages/StatsPage')) },
           { path: 'coach', ...page(() => import('@/features/coach/pages/WeeklyCoachPage')) },

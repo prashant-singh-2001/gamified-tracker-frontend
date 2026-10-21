@@ -230,10 +230,10 @@ describe('Log Result — receipt and analytics', () => {
     expect(screen.getByText('Longest on Studying: 9 days')).toBeInTheDocument();
   });
 
-  it('shows my tier and position, with the "updates every few minutes" caveat', async () => {
+  it('shows my tier and position, with the "refreshes about every 30 seconds" caveat', async () => {
     renderResult({ seeded: true });
     expect(await screen.findByText('Alpine')).toBeInTheDocument();
     expect(screen.getByText(/#30 of 120/)).toBeInTheDocument();
-    expect(screen.getByText('Rank updates every few minutes.')).toBeInTheDocument();
+    expect(screen.getByText(/Ranks refresh about every 30 seconds/)).toBeInTheDocument();
   });
 });

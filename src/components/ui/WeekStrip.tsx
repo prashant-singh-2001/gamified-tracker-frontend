@@ -16,6 +16,13 @@ type WeekStripProps = {
    * strip is a compact 80px sparkline.
    */
   fill?: boolean;
+  /**
+   * Same-weekday XP from the week before, by `YYYY-MM-DD` of the day it lines up with. Drawn as a
+   * dashed outline behind each bar.
+   */
+  ghost?: Readonly<Record<string, number>>;
+  /** Makes each day focusable and reports the one hovered, focused or tapped (null on leave). */
+  onActive?: (index: number | null) => void;
   className?: string;
 };
 
@@ -38,6 +45,8 @@ export function WeekStrip({
   addedXp = 0,
   fill = false,
   emptyMessage,
+  ghost,
+  onActive,
   className,
 }: WeekStripProps) {
   const today = serverToday();
@@ -84,7 +93,7 @@ export function WeekStrip({
     day.date === today && addedXp > 0 && !grown
       ? Math.max(0, day.totalXpEarned - addedXp)
       : day.totalXpEarned;
-  const max = Math.max(1, ...days.map((d) => d.totalXpEarned));
+  const max = Math.max(1, ...days.map((d) => d.totalXpEarned), ...Object.values(ghost ?? {}));
 
   return (
     <div className={wrapper}>
@@ -99,20 +108,40 @@ export function WeekStrip({
             />
           ))}
         <ul className="relative flex h-full items-stretch justify-between gap-2">
-          {days.map((day) => {
+          {days.map((day, index) => {
             const isToday = day.date === today;
             const upcoming = day.date > today; // ISO dates compare as text
             const percent = (shown(day) / max) * TALLEST;
+            const before = ghost?.[day.date];
+            const interactive = onActive && !upcoming;
             return (
               <li
                 key={day.date}
-                className="relative flex-1"
+                className={cn(
+                  'relative flex-1',
+                  interactive &&
+                    'cursor-pointer rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text',
+                )}
+                tabIndex={interactive ? 0 : undefined}
+                onMouseEnter={interactive ? () => onActive(index) : undefined}
+                onMouseLeave={interactive ? () => onActive(null) : undefined}
+                onFocus={interactive ? () => onActive(index) : undefined}
+                onBlur={interactive ? () => onActive(null) : undefined}
+                onClick={interactive ? () => onActive(index) : undefined}
                 aria-label={
                   upcoming
                     ? `${weekday(day.date)}: not yet`
                     : `${weekday(day.date)}${isToday ? ' (today)' : ''}: ${formatXp(day.totalXpEarned)}`
                 }
               >
+                {before !== undefined && !upcoming && (
+                  <div
+                    aria-hidden="true"
+                    data-testid="ghost-bar"
+                    className="absolute inset-x-0 bottom-0 rounded-md border border-dashed border-text-faint"
+                    style={{ height: `${(before / max) * TALLEST}%`, minHeight: MIN_BAR }}
+                  />
+                )}
                 {upcoming ? (
                   <div
                     aria-hidden="true"
