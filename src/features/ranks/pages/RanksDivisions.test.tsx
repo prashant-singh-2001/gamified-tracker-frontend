@@ -209,6 +209,13 @@ describe('Ladder with divisions', () => {
     const mine = within(ladder).getByRole('link', { name: /Ridge/ });
     expect(mine).toHaveTextContent('You are here');
     expect(within(mine).getByText(/division II/)).toBeInTheDocument();
+    // Every row's label column is the same width, so the bars start at the same place.
+    const widths = new Set(
+      within(ladder)
+        .getAllByTestId('tier-label')
+        .map((el) => el.className),
+    );
+    expect(widths.size).toBe(1);
     expect(within(ladder).getByRole('link', { name: /Summit/ })).toHaveAttribute(
       'href',
       '/app/ranks/SUMMIT',

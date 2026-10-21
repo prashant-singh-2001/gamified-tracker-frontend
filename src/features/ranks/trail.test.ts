@@ -18,7 +18,10 @@ describe('trail geometry', () => {
     const half = markerPoint(5, 0.5);
     expect(half.y).toBeLessThan(nodePoint(rowOfTier(5)).y);
     expect(half.y).toBeGreaterThan(nodePoint(rowOfTier(6)).y);
-    expect(markerPoint(5, 1)).toEqual(nodePoint(rowOfTier(6)));
+    // Even at the very top of the tier it stays inside its own row.
+    const top = markerPoint(5, 1);
+    expect(top.y).toBeGreaterThan(nodePoint(rowOfTier(5)).y - ROW_H / 2);
+    expect(top.y).toBeLessThan(nodePoint(rowOfTier(5)).y);
   });
 
   it('keeps the marker on the Summit node at the top', () => {

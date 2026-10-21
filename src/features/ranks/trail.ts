@@ -21,16 +21,19 @@ export function trailPath(): string {
   return smoothPath(Array.from({ length: COUNT }, (_, row) => nodePoint(row)));
 }
 
+/** Share of the way to the next tier's node the marker may travel; the row edge is at 0.5. */
+const IN_ROW = 0.45;
+
 /**
- * Where "You" sits: on your tier's node at the bottom of your band, moving up towards the next
- * tier's node as `progress` (0-1) grows. At Summit there is nowhere further up, so the marker
- * stays on the node.
+ * Where "You" sits: on your tier's node at the bottom of your band, moving up the trail towards
+ * the next tier as `progress` (0-1) grows, but never past your own row's top edge, so the marker
+ * always reads as inside your tier. At Summit there is nowhere further up, so it stays on the node.
  */
 export function markerPoint(tierOrder: number, progress: number): Point {
   const row = rowOfTier(tierOrder);
   const from = nodePoint(row);
   if (row === 0) return from;
   const to = nodePoint(row - 1);
-  const t = Math.min(1, Math.max(0, progress));
+  const t = Math.min(1, Math.max(0, progress)) * IN_ROW;
   return { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t };
 }

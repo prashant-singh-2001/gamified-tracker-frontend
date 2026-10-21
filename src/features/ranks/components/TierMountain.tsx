@@ -91,8 +91,9 @@ export function TierMountain() {
           })}
           {marker && (
             <g data-testid="you-marker" transform={`translate(${marker.x} ${marker.y})`}>
-              <circle r={16} fill="var(--accent)" opacity={0.2} />
-              <circle r={9} fill="var(--accent)" stroke="var(--surface)" strokeWidth={3} />
+              {/* A ring, so the tier node (the lime Summit one included) shows through. */}
+              <circle r={14} fill="none" stroke="var(--accent)" strokeWidth={4} />
+              <circle r={4} fill="var(--accent)" />
             </g>
           )}
         </svg>
@@ -110,9 +111,7 @@ export function TierMountain() {
                 )}
                 style={{ height: ROW_H }}
               >
-                <span
-                  className={cn('flex shrink-0 flex-col', own ? 'w-40 sm:w-48' : 'w-28 sm:w-36')}
-                >
+                <span data-testid="tier-label" className="flex w-32 shrink-0 flex-col sm:w-44">
                   <span className="flex items-center gap-2">
                     <span className="font-display text-[1.7rem] leading-none font-bold">
                       {tier.label}
@@ -124,9 +123,14 @@ export function TierMountain() {
                       </>
                     )}
                   </span>
-                  <span className="text-sm text-muted">
-                    {tier.band}
-                    {own && <span className="font-medium text-accent"> · You are here</span>}
+                  <span className="truncate text-sm text-muted">
+                    {/* On a phone your row swaps its band for "You are here"; the band stays readable. */}
+                    <span className={cn(own && 'sr-only sm:not-sr-only')}>{tier.band}</span>
+                    {own && (
+                      <span className="font-medium text-accent">
+                        <span className="hidden sm:inline"> · </span>You are here
+                      </span>
+                    )}
                   </span>
                 </span>
                 <span aria-hidden="true" className="flex min-w-0 flex-1 items-center">
