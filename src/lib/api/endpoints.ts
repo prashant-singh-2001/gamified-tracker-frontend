@@ -67,5 +67,6 @@ export const endpoints = {
     list: `${API}/notifications`,
     unreadCount: `${API}/notifications/unread-count`,
     markRead: (id: number | string) => `${API}/notifications/${id}/read`,
+    readAll: `${API}/notifications/read-all`,
   },
 } as const;

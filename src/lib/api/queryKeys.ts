@@ -25,6 +25,8 @@ export const qk = {
     allByUser: () => ['activityLog', 'user'] as const,
     allStreaks: () => ['activityLog', 'streaks'] as const,
     byUser: (userId: number) => ['activityLog', 'user', userId] as const,
+    pages: (userId: number, filters: object) =>
+      ['activityLog', 'user', userId, 'pages', filters] as const,
     recent: (userId: number, limit: number) =>
       ['activityLog', 'user', userId, 'recent', limit] as const,
     byId: (logId: number | string) => ['activityLog', logId] as const,
@@ -55,7 +57,7 @@ export const qk = {
   },
   notifications: {
     all: ['notifications'] as const,
-    list: () => ['notifications', 'list'] as const,
+    list: (unreadOnly: boolean) => ['notifications', 'list', unreadOnly] as const,
     unreadCount: () => ['notifications', 'unreadCount'] as const,
   },
 } as const;
