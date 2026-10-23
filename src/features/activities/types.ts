@@ -1,6 +1,6 @@
 import { CATEGORY_DEFAULT_MULTIPLIER, type Category } from '@/lib/api/types';
 
-/** `GET /api/activity/` entry (ActivityResponseRecord). */
+/** `GET /api/activity` entry (ActivityResponseRecord). */
 export type CatalogActivity = {
   id: number;
   name: string;

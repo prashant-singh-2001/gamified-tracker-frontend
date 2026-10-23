@@ -5,7 +5,7 @@ export default function ActivityCatalogPage() {
     <PlaceholderPage
       title="Activity catalog"
       screen={13}
-      endpoints={['GET /api/activity/', 'POST /api/activity/']}
+      endpoints={['GET /api/activity', 'POST /api/activity']}
     />
   );
 }

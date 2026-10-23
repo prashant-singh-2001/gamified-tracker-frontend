@@ -62,7 +62,7 @@ function mockNotifications(m: Mocks = {}) {
       rows = rows.map((n) => (n.id === Number(params.id) ? { ...n, read: true } : n));
       return new HttpResponse(null, { status: 204 });
     }),
-    http.get('*/api/activity/', () =>
+    http.get('*/api/activity', () =>
       HttpResponse.json([activity(11, 'Running'), activity(12, 'Studying')]),
     ),
   );

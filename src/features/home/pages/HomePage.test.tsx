@@ -123,7 +123,7 @@ function mockHome(m: Mocks = {}) {
           })),
       );
     }),
-    http.get('*/api/activity/', () => HttpResponse.json(m.catalog ?? [])),
+    http.get('*/api/activity', () => HttpResponse.json(m.catalog ?? [])),
     http.get('*/api/ranks/me/leaderboard', () => HttpResponse.json(m.myBoard ?? [])),
     http.get('*/api/ranks/:tier/leaderboard', ({ params, request }) => {
       const tier = String(params.tier);

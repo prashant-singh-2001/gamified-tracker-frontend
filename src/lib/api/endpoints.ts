@@ -16,8 +16,8 @@ export const endpoints = {
     me: '/users/me',
   },
   activities: {
-    list: `${API}/activity/`,
-    create: `${API}/activity/`,
+    list: `${API}/activity`,
+    create: `${API}/activity`,
   },
   activityLog: {
     create: `${API}/activitylog/`,
