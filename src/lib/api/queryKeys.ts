@@ -18,7 +18,9 @@ export const qk = {
     me: () => ['leaderboard', 'me'] as const,
   },
   activities: {
+    all: ['activities'] as const,
     list: () => ['activities', 'list'] as const,
+    admin: () => ['activities', 'admin'] as const,
     byId: (id: number) => ['activities', 'byId', id] as const,
   },
   activityLog: {
