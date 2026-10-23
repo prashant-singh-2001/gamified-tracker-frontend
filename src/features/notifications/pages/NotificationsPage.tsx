@@ -19,8 +19,7 @@ const VIEWS = [
 ] as const;
 
 /**
- * Your level-ups, newest first. Tapping one marks it read and opens History for that activity
- * (until Activity detail exists). The view lives in the URL: `?show=unread`.
+ * Your level-ups, newest first. Tapping one marks it read and opens that activity's detail. The view lives in the URL: `?show=unread`.
  */
 export default function NotificationsPage() {
   const [params] = useSearchParams();
@@ -41,7 +40,7 @@ export default function NotificationsPage() {
 
   function open(event: LevelUpEvent) {
     if (!event.read) markRead.mutate(event.id);
-    void navigate(`/app/history?activity=${event.activityId}`);
+    void navigate(`/app/activities/${event.activityId}`);
   }
 
   function readAll() {

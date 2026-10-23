@@ -1,6 +1,6 @@
 import { CATEGORY_DEFAULT_MULTIPLIER, type Category } from '@/lib/api/types';
 
-/** `GET /api/activity/` entry (ActivityResponseRecord). */
+/** `GET /api/activity` entry (ActivityResponseRecord). */
 export type CatalogActivity = {
   id: number;
   name: string;
@@ -37,4 +37,25 @@ export type RecentActivityPick = {
   timesLogged: number;
   /** Start of the most recent session, ISO LocalDateTime. */
   lastUsedAt: string;
+};
+
+/** `GET /api/level/user/{userId}` row (LevelTrackerDto): the caller's progress in one activity. */
+export type LevelTracker = {
+  userId: number;
+  activityId: number;
+  level: number;
+  totalXp: number;
+  /** XP inside the current level. */
+  currentLevelXp: number;
+  /** Only knows explicit threshold rows: 0 on the default curve. See `levelProgress`. */
+  xpForNextLevel: number;
+  progressPercent: number;
+  leveledUp: boolean;
+};
+
+/** `GET /api/threshold/activity/{id}` row: cumulative XP needed to reach `level`. */
+export type Threshold = {
+  activityId: number;
+  level: number;
+  xpRequired: number;
 };
