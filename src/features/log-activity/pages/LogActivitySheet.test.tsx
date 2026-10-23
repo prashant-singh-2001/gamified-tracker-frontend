@@ -59,7 +59,7 @@ function ResultProbe() {
 
 function renderSheet(entry = '/app/log') {
   signIn(7, 'USER');
-  server.use(http.get('*/api/activity/', () => HttpResponse.json(catalog)));
+  server.use(http.get('*/api/activity', () => HttpResponse.json(catalog)));
   return renderRoutes(
     [
       {

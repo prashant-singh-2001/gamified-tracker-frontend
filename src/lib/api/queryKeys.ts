@@ -18,7 +18,10 @@ export const qk = {
     me: () => ['leaderboard', 'me'] as const,
   },
   activities: {
+    all: ['activities'] as const,
     list: () => ['activities', 'list'] as const,
+    admin: () => ['activities', 'admin'] as const,
+    byId: (id: number) => ['activities', 'byId', id] as const,
   },
   activityLog: {
     /** Prefixes, for invalidating every user's/streak list at once without touching `byId`. */
@@ -49,6 +52,7 @@ export const qk = {
     byActivity: (activityId: number | string) => ['levels', 'activity', activityId] as const,
   },
   thresholds: {
+    root: ['thresholds'] as const,
     all: () => ['thresholds', 'all'] as const,
     byActivity: (activityId: number | string) => ['thresholds', 'activity', activityId] as const,
   },

@@ -116,7 +116,7 @@ function mockRanks(m: Mocks = {}) {
           })),
       );
     }),
-    http.get('*/api/activity/', () => HttpResponse.json(m.catalog ?? [])),
+    http.get('*/api/activity', () => HttpResponse.json(m.catalog ?? [])),
   );
   return calls;
 }

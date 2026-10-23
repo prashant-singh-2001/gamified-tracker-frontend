@@ -16,8 +16,9 @@ export const endpoints = {
     me: '/users/me',
   },
   activities: {
-    list: `${API}/activity/`,
-    create: `${API}/activity/`,
+    list: `${API}/activity`,
+    create: `${API}/activity`,
+    byId: (idOrName: number | string) => `${API}/activity/${idOrName}`,
   },
   activityLog: {
     create: `${API}/activitylog/`,
@@ -47,6 +48,7 @@ export const endpoints = {
   thresholds: {
     all: `${API}/threshold`,
     byActivity: (activityId: number | string) => `${API}/threshold/activity/${activityId}`,
+    row: (activityId: number, level: number) => `${API}/threshold/${activityId}/${level}`,
   },
   ranks: {
     all: `${API}/ranks`,

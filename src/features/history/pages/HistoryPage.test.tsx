@@ -95,7 +95,7 @@ function mockHistory(m: Mocks = {}) {
         ? HttpResponse.json(row)
         : HttpResponse.json({ detail: 'No such log' }, { status: 404 });
     }),
-    http.get('*/api/activity/', () => HttpResponse.json([running, studying])),
+    http.get('*/api/activity', () => HttpResponse.json([running, studying])),
   );
   return requests;
 }
