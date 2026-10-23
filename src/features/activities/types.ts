@@ -38,3 +38,24 @@ export type RecentActivityPick = {
   /** Start of the most recent session, ISO LocalDateTime. */
   lastUsedAt: string;
 };
+
+/** `GET /api/level/user/{userId}` row (LevelTrackerDto): the caller's progress in one activity. */
+export type LevelTracker = {
+  userId: number;
+  activityId: number;
+  level: number;
+  totalXp: number;
+  /** XP inside the current level. */
+  currentLevelXp: number;
+  /** Only knows explicit threshold rows: 0 on the default curve. See `levelProgress`. */
+  xpForNextLevel: number;
+  progressPercent: number;
+  leveledUp: boolean;
+};
+
+/** `GET /api/threshold/activity/{id}` row: cumulative XP needed to reach `level`. */
+export type Threshold = {
+  activityId: number;
+  level: number;
+  xpRequired: number;
+};

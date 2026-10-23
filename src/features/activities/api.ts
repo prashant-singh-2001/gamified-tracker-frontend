@@ -1,9 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
 import { qk } from '@/lib/api/queryKeys';
 import { useUserId } from '@/lib/auth/useUserId';
-import type { CatalogActivity, RecentActivityPick, Streak } from './types';
+import type { CatalogActivity, LevelTracker, RecentActivityPick, Streak, Threshold } from './types';
 
 export function useCatalog() {
   return useQuery({
@@ -33,6 +33,40 @@ export function useRecentActivities(limit: number) {
       (
         await api.get<RecentActivityPick[]>(endpoints.activityLog.recent(userId ?? 0), {
           params: { limit },
+        })
+      ).data,
+  });
+}
+
+/** One activity by id. A 404 means unknown or deactivated, which reads the same to a user. */
+export function useActivity(activityId: number) {
+  return useQuery({
+    queryKey: qk.activities.byId(activityId),
+    queryFn: async () =>
+      (await api.get<CatalogActivity>(endpoints.activities.byId(activityId))).data,
+    retry: false,
+  });
+}
+
+/** The caller's level in every activity they have logged. */
+export function useMyLevels() {
+  const userId = useUserId();
+  return useQuery({
+    queryKey: qk.levels.byUser(userId ?? 0),
+    enabled: userId !== undefined,
+    queryFn: async () => (await api.get<LevelTracker[]>(endpoints.levels.byUser(userId ?? 0))).data,
+  });
+}
+
+/** The effective level ladder up to `upToLevel`: explicit rows if there are any, else the default curve. */
+export function useLadder(activityId: number, upToLevel: number) {
+  return useQuery({
+    queryKey: [...qk.thresholds.byActivity(activityId), upToLevel] as const,
+    placeholderData: keepPreviousData,
+    queryFn: async () =>
+      (
+        await api.get<Threshold[]>(endpoints.thresholds.byActivity(activityId), {
+          params: { upToLevel },
         })
       ).data,
   });

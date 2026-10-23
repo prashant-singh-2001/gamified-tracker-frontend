@@ -19,6 +19,7 @@ export const qk = {
   },
   activities: {
     list: () => ['activities', 'list'] as const,
+    byId: (id: number) => ['activities', 'byId', id] as const,
   },
   activityLog: {
     /** Prefixes, for invalidating every user's/streak list at once without touching `byId`. */

@@ -18,6 +18,7 @@ export const endpoints = {
   activities: {
     list: `${API}/activity`,
     create: `${API}/activity`,
+    byId: (idOrName: number | string) => `${API}/activity/${idOrName}`,
   },
   activityLog: {
     create: `${API}/activitylog/`,
