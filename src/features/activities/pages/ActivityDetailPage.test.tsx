@@ -78,9 +78,17 @@ type Mocks = {
 };
 
 function mockActivity(m: Mocks = {}) {
-  const calls = { upToLevel: [] as string[], logs: [] as URLSearchParams[] };
+  const calls = {
+    upToLevel: [] as string[],
+    logs: [] as URLSearchParams[],
+    activity: [] as { idOrName: string; includeInactive: string | null }[],
+  };
   server.use(
-    http.get('*/api/activity/:id', () => {
+    http.get('*/api/activity/:id', ({ params, request }) => {
+      calls.activity.push({
+        idOrName: String(params.id),
+        includeInactive: new URL(request.url).searchParams.get('includeInactive'),
+      });
       if (m.activity === 404) return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
       if (m.activity === 500) return HttpResponse.json({ detail: 'Down' }, { status: 500 });
       return HttpResponse.json(m.activity ?? running);
@@ -108,15 +116,15 @@ function mockActivity(m: Mocks = {}) {
   return calls;
 }
 
-function renderDetail(id = 11) {
-  signIn(ME, 'USER');
+function renderDetail(idOrName: number | string = 11, role: 'USER' | 'ADMIN' = 'USER') {
+  signIn(ME, role);
   return renderRoutes(
     [
-      { path: '/app/activities/:activityId', element: <ActivityDetailPage /> },
+      { path: '/app/activities/:idOrName', element: <ActivityDetailPage /> },
       { path: '/app/history', element: <p>history page</p> },
       { path: '/app/log', element: <p>log page</p> },
     ],
-    `/app/activities/${id}`,
+    `/app/activities/${encodeURIComponent(String(idOrName))}`,
   );
 }
 
@@ -251,5 +259,46 @@ describe('Activity detail — when it cannot load', () => {
 
     expect(await screen.findByText("Couldn't load this activity")).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+  });
+});
+
+describe('Activity detail — by name, and for admins', () => {
+  it('opens by name and settles on the id address', async () => {
+    const calls = mockActivity({ activity: { ...running, name: 'Deep work' } });
+    const { router } = renderDetail('Deep work');
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Deep work' })).toBeInTheDocument();
+    expect(calls.activity[0]).toEqual({ idOrName: 'Deep work', includeInactive: null });
+    await waitFor(() => expect(router.state.location.pathname).toBe('/app/activities/11'));
+  });
+
+  it('does not ask a user for inactive activities', async () => {
+    const calls = mockActivity();
+    renderDetail(11, 'USER');
+    await screen.findByRole('heading', { level: 1, name: 'Running' });
+    expect(calls.activity.every((c) => c.includeInactive === null)).toBe(true);
+  });
+
+  it('lets an admin open a deactivated activity, with a banner and no Log button', async () => {
+    const calls = mockActivity({ activity: { ...running, active: false } });
+    renderDetail(11, 'ADMIN');
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Running' })).toBeInTheDocument();
+    expect(calls.activity[0]).toEqual({ idOrName: '11', includeInactive: 'true' });
+    expect(
+      screen.getByText(
+        'This activity is inactive. It is hidden from the Log screen and cannot be logged.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Log this activity' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /See all in History/ })).toBeInTheDocument();
+  });
+
+  it('shows no banner for an active activity', async () => {
+    mockActivity();
+    renderDetail(11, 'ADMIN');
+    await screen.findByRole('heading', { level: 1, name: 'Running' });
+    expect(screen.queryByText(/This activity is inactive/)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Log this activity' })).toBeInTheDocument();
   });
 });

@@ -21,7 +21,8 @@ export const qk = {
     all: ['activities'] as const,
     list: () => ['activities', 'list'] as const,
     admin: () => ['activities', 'admin'] as const,
-    byId: (id: number) => ['activities', 'byId', id] as const,
+    byId: (idOrName: number | string, includeInactive = false) =>
+      ['activities', 'byId', idOrName, includeInactive] as const,
   },
   activityLog: {
     /** Prefixes, for invalidating every user's/streak list at once without touching `byId`. */

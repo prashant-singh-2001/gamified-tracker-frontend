@@ -38,12 +38,20 @@ export function useRecentActivities(limit: number) {
   });
 }
 
-/** One activity by id. A 404 means unknown or deactivated, which reads the same to a user. */
-export function useActivity(activityId: number) {
+/**
+ * One activity by id or by name (the backend takes either in the same place). A 404 means unknown
+ * or deactivated, which reads the same to a user. An admin may also open a deactivated one.
+ */
+export function useActivity(idOrName: number | string, includeInactive = false) {
   return useQuery({
-    queryKey: qk.activities.byId(activityId),
+    queryKey: qk.activities.byId(idOrName, includeInactive),
     queryFn: async () =>
-      (await api.get<CatalogActivity>(endpoints.activities.byId(activityId))).data,
+      (
+        await api.get<CatalogActivity>(
+          endpoints.activities.byId(encodeURIComponent(String(idOrName))),
+          { params: includeInactive ? { includeInactive: true } : undefined },
+        )
+      ).data,
     retry: false,
   });
 }
