@@ -17,7 +17,11 @@ export function WeekFacts({ totals }: { totals: WeeklyReport }) {
           {formatXp(totals.currentWeekXp)}
         </dd>
         <dd className="text-sm text-soft">
-          {quiet ? 'Nothing logged yet.' : <Change value={totals.percentageChange} />}
+          {quiet ? (
+            'Nothing logged yet.'
+          ) : (
+            <Change value={totals.percentageChange} mode="rolling" />
+          )}
         </dd>
       </div>
       <div className="flex flex-col gap-1 border-t border-line-strong pt-3">

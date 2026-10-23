@@ -7,6 +7,9 @@ export type DailyXp = {
   totalDurationMinutes: number;
 };
 
+/** Which seven days: Monday to Sunday (calendar), or the seven ending today (rolling). */
+export type WeeklyMode = 'calendar' | 'rolling';
+
 /**
  * `GET /api/activitylog/analytics/user/{userId}/weekly-report?mode=calendar`.
  * Monday to Sunday (UTC), always seven days: days after today are present with zero XP. The change

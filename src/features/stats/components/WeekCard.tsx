@@ -1,10 +1,13 @@
 import { useMemo } from 'react';
+import { useSearchParams } from 'react-router';
 import { CardSkeleton } from '@/components/ui/Skeleton';
+import { cn } from '@/lib/utils/cn';
 import { ErrorPanel } from '@/components/ui/ErrorPanel';
 import { WeekStrip } from '@/components/ui/WeekStrip';
 import { formatDuration, formatXp } from '@/lib/utils/format';
 import { useWeeklyReport, useXpOverTime } from '../api';
 import { dayLabel } from '../dates';
+import type { WeeklyMode } from '../types';
 import { useReadout } from '../useReadout';
 import { Change } from './Change';
 import { StatCard } from './StatCard';
@@ -15,9 +18,41 @@ const QUESTION = 'Am I doing more than last week?';
 const sevenDaysBefore = (date: string) =>
   new Date(new Date(`${date}T00:00:00Z`).getTime() - 7 * DAY).toISOString().slice(0, 10);
 
+const CHOICES: readonly { mode: WeeklyMode; label: string }[] = [
+  { mode: 'calendar', label: 'This week' },
+  { mode: 'rolling', label: 'Last 7 days' },
+];
+
+/** Monday to Sunday, or the seven days ending today. The choice stays in the URL. */
+function WeekChoice({ mode, onChange }: { mode: WeeklyMode; onChange: (m: WeeklyMode) => void }) {
+  return (
+    <div role="radiogroup" aria-label="Which days" className="flex gap-1">
+      {CHOICES.map((c) => (
+        <button
+          key={c.mode}
+          type="button"
+          role="radio"
+          aria-checked={c.mode === mode}
+          onClick={() => onChange(c.mode)}
+          className={cn(
+            'min-h-9 rounded-full border px-3 text-sm',
+            c.mode === mode
+              ? 'border-text bg-text text-bg'
+              : 'border-line-strong text-soft hover:border-text',
+          )}
+        >
+          {c.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /** This week's XP against last week's, day by day, with last week as a dashed outline. */
 export function WeekCard() {
-  const report = useWeeklyReport();
+  const [params, setParams] = useSearchParams();
+  const mode: WeeklyMode = params.get('week') === 'rolling' ? 'rolling' : 'calendar';
+  const report = useWeeklyReport(mode);
   const series = useXpOverTime(14);
   const readout = useReadout('Hover or tap a day for its numbers.');
 
@@ -31,6 +66,18 @@ export function WeekCard() {
     }
     return out;
   }, [report.data, series.data]);
+
+  function choose(next: WeeklyMode) {
+    setParams(
+      (current) => {
+        const copy = new URLSearchParams(current);
+        if (next === 'rolling') copy.set('week', 'rolling');
+        else copy.delete('week');
+        return copy;
+      },
+      { replace: true },
+    );
+  }
 
   if (report.isPending) return <CardSkeleton label="Loading this week" />;
   if (report.isError) {
@@ -66,8 +113,15 @@ export function WeekCard() {
   return (
     <StatCard
       question={QUESTION}
+      aside={<WeekChoice mode={mode} onChange={choose} />}
       answer={formatXp(week.currentWeekXp)}
-      context={fresh ? 'Nothing logged yet this week.' : <Change value={week.percentageChange} />}
+      context={
+        fresh ? (
+          'Nothing logged yet this week.'
+        ) : (
+          <Change value={week.percentageChange} mode={mode} />
+        )
+      }
       readout={fresh ? undefined : readout.text}
     >
       <WeekStrip

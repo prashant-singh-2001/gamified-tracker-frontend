@@ -42,7 +42,8 @@ export const qk = {
     xpOverTime: (userId: number, days: number) =>
       ['analytics', 'xpOverTime', userId, days] as const,
     categorySummary: (userId: number) => ['analytics', 'categorySummary', userId] as const,
-    weeklyReport: (userId: number) => ['analytics', 'weeklyReport', userId] as const,
+    weeklyReport: (userId: number, mode: string) =>
+      ['analytics', 'weeklyReport', userId, mode] as const,
     bestTimeOfDay: (userId: number) => ['analytics', 'bestTimeOfDay', userId] as const,
   },
   levels: {
