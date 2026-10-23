@@ -18,6 +18,17 @@ function useRefreshThresholds() {
   return () => void queryClient.invalidateQueries({ queryKey: qk.thresholds.root });
 }
 
+/**
+ * Reads one level as it is stored right now. The page shows a ladder loaded earlier, so an edit
+ * asks again just before it is confirmed. Rejects with a 404 when the level no longer exists.
+ */
+export function useReadThreshold() {
+  return useMutation({
+    mutationFn: async (key: Pick<Threshold, 'activityId' | 'level'>) =>
+      (await api.post<Threshold>(endpoints.thresholds.lookup, key)).data,
+  });
+}
+
 /** Creates a level, or replaces the one with the same number. */
 export function useSaveThreshold() {
   const refresh = useRefreshThresholds();

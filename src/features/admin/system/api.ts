@@ -27,6 +27,19 @@ export function useAllLevels(activityId: number | null) {
   });
 }
 
+/**
+ * One level tracker by its internal id (the caller's own, or a 404). Nothing the API returns
+ * carries a tracker's id yet, so no screen can ask for one; this is here for when it does.
+ */
+export function useLevelRow(id: number | null) {
+  return useQuery({
+    queryKey: qk.levels.byId(id ?? 0),
+    enabled: id !== null,
+    queryFn: async () => (await api.get<LevelTracker>(endpoints.levels.byId(id ?? 0))).data,
+    retry: false,
+  });
+}
+
 export type AwardRequest = {
   /** Omitted to award the acting admin's own account. */
   targetUserId?: number;

@@ -51,6 +51,7 @@ export const qk = {
     allPrefix: ['levels'] as const,
     all: () => ['levels', 'all'] as const,
     byUser: (userId: number) => ['levels', 'user', userId] as const,
+    byId: (id: number) => ['levels', 'row', id] as const,
     byActivity: (activityId: number | string) => ['levels', 'activity', activityId] as const,
   },
   thresholds: {
