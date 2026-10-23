@@ -1,4 +1,4 @@
-import { useLocation, useNavigate, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { ErrorPanel } from '@/components/ui/ErrorPanel';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -35,6 +35,12 @@ export default function LogDetailPage() {
       ) : (
         <div className="flex flex-col gap-4">
           <Receipt log={log.data} />
+          <Link
+            to={`/app/activities/${log.data.activity.id}`}
+            className="self-start text-[15px] font-medium text-accent no-underline hover:underline"
+          >
+            Your level in {log.data.activity.name}
+          </Link>
           {log.data.reviewStatus === 'FLAGGED' && (
             <p className="text-soft">An admin is reviewing this unusually long session.</p>
           )}

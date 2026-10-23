@@ -74,7 +74,7 @@ function renderNotifications(path = '/app/notifications') {
   return renderRoutes(
     [
       { path: '/app/notifications', element: <NotificationsPage /> },
-      { path: '/app/history', element: <p>history page</p> },
+      { path: '/app/activities/:activityId', element: <p>activity page</p> },
       { path: '/app/log', element: <p>log page</p> },
     ],
     path,
@@ -124,14 +124,13 @@ describe('Notifications — the feed', () => {
 });
 
 describe('Notifications — reading', () => {
-  it('marks a tapped level-up read and opens History for that activity', async () => {
+  it('marks a tapped level-up read and opens that activity', async () => {
     const calls = mockNotifications();
     const { router } = renderNotifications();
 
     await userEvent.click(await screen.findByRole('button', { name: /Level 7 in Running/ }));
     await waitFor(() => expect(calls.read).toEqual([1]));
-    await waitFor(() => expect(router.state.location.pathname).toBe('/app/history'));
-    expect(router.state.location.search).toBe('?activity=11');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/app/activities/11'));
   });
 
   it('does not post a read for one that is already read', async () => {
@@ -139,7 +138,7 @@ describe('Notifications — reading', () => {
     const { router } = renderNotifications();
 
     await userEvent.click(await screen.findByRole('button', { name: /Level 8 in Studying/ }));
-    await waitFor(() => expect(router.state.location.search).toBe('?activity=12'));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/app/activities/12'));
     expect(calls.read).toEqual([]);
   });
 
