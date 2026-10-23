@@ -48,6 +48,7 @@ export const endpoints = {
   thresholds: {
     all: `${API}/threshold`,
     byActivity: (activityId: number | string) => `${API}/threshold/activity/${activityId}`,
+    row: (activityId: number, level: number) => `${API}/threshold/${activityId}/${level}`,
   },
   ranks: {
     all: `${API}/ranks`,

@@ -52,6 +52,7 @@ export const qk = {
     byActivity: (activityId: number | string) => ['levels', 'activity', activityId] as const,
   },
   thresholds: {
+    root: ['thresholds'] as const,
     all: () => ['thresholds', 'all'] as const,
     byActivity: (activityId: number | string) => ['thresholds', 'activity', activityId] as const,
   },
