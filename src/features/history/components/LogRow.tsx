@@ -3,12 +3,21 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import type { ActivityLogResponse } from '@/features/log-activity/types';
 import { cn } from '@/lib/utils/cn';
 import { CATEGORY_ICON } from '@/lib/utils/category';
-import { formatDuration } from '@/lib/utils/format';
-import { formatLocalRange } from '@/lib/utils/serverTime';
+import { formatDuration, formatTimeRange } from '@/lib/utils/format';
+import { formatLocalRange, fromServerDateTime } from '@/lib/utils/serverTime';
 import { xpText } from '../xpText';
 
 /** One log in a day: what, when, how long, and what it earned. Opens its detail. */
-export function LogRow({ log, search }: { log: ActivityLogResponse; search: string }) {
+export function LogRow({
+  log,
+  search,
+  showDate = false,
+}: {
+  log: ActivityLogResponse;
+  search: string;
+  /** Add the day to the time, for lists that are not grouped under a day. */
+  showDate?: boolean;
+}) {
   const Icon = CATEGORY_ICON[log.activity.category];
   const xp = xpText(log);
 
@@ -24,7 +33,9 @@ export function LogRow({ log, search }: { log: ActivityLogResponse; search: stri
           {log.reviewStatus !== 'CLEARED' && <StatusPill status={log.reviewStatus} />}
         </span>
         <span className="text-sm text-muted">
-          {formatLocalRange(log.startTime, log.endTime)}
+          {showDate
+            ? formatTimeRange(fromServerDateTime(log.startTime), fromServerDateTime(log.endTime))
+            : formatLocalRange(log.startTime, log.endTime)}
           <span aria-hidden="true"> · </span>
           <span className="sr-only">, </span>
           {formatDuration(log.durationMinutes)}
