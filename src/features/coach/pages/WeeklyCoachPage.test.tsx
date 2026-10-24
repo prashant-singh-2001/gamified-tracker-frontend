@@ -184,7 +184,7 @@ describe('Weekly coach — the facts', () => {
 
     expect(await screen.findByText('1,240 XP')).toBeInTheDocument();
     expect(screen.getByText('27%')).toBeInTheDocument();
-    expect(screen.getByText(/up on the same days last week/)).toBeInTheDocument();
+    expect(screen.getByText(/up on the 7 days before/)).toBeInTheDocument();
     expect(screen.getByText('10 h 40 min')).toBeInTheDocument();
     const top = screen.getByText('Top category').nextElementSibling as HTMLElement;
     expect(top).toHaveTextContent('Study');
@@ -193,7 +193,7 @@ describe('Weekly coach — the facts', () => {
   it('says down for a drop, and nothing logged for a quiet week', async () => {
     mockCoach([insights({ totals: { ...totals, percentageChange: -12 } })]);
     renderCoach();
-    expect(await screen.findByText(/down on the same days last week/)).toBeInTheDocument();
+    expect(await screen.findByText(/down on the 7 days before/)).toBeInTheDocument();
   });
 
   it('sorts categories by XP and sizes the bars by time, with the top row in the accent', async () => {

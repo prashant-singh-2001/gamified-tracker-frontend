@@ -44,11 +44,14 @@ export const endpoints = {
     all: `${API}/level`,
     byUser: (userId: number) => `${API}/level/user/${userId}`,
     byActivity: (activityId: number | string) => `${API}/level/activity/${activityId}`,
+    byId: (id: number | string) => `${API}/level/${id}`,
   },
   thresholds: {
     all: `${API}/threshold`,
     byActivity: (activityId: number | string) => `${API}/threshold/activity/${activityId}`,
     row: (activityId: number, level: number) => `${API}/threshold/${activityId}/${level}`,
+    /** A read despite the POST: the body is the key (`{activityId, level}`) and is not stored. */
+    lookup: `${API}/threshold/activity`,
   },
   ranks: {
     all: `${API}/ranks`,

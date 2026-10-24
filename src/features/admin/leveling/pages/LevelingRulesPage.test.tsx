@@ -33,6 +33,8 @@ type Mocks = {
   rows?: Threshold[];
   writeStatus?: number;
   writeDetail?: string;
+  /** What the re-read before an edit answers: a different XP, or 404 for a removed level. */
+  lookup?: { xpRequired: number } | 404;
 };
 
 function mockLeveling(m: Mocks = {}) {
@@ -40,6 +42,7 @@ function mockLeveling(m: Mocks = {}) {
     saved: [] as Threshold[],
     updated: [] as { activityId: string; level: string; body: object }[],
     deleted: [] as string[],
+    lookups: [] as { activityId: number; level: number }[],
     ladderAsked: [] as string[],
   };
   const fail = () =>
@@ -59,6 +62,20 @@ function mockLeveling(m: Mocks = {}) {
           t(Number(params.id), i + 1, 50 * i * (i + 1)),
         ),
       );
+    }),
+    http.post('*/api/threshold/activity', async ({ request }) => {
+      const key = (await request.json()) as { activityId: number; level: number };
+      calls.lookups.push(key);
+      if (m.lookup === 404) {
+        return HttpResponse.json({ detail: 'ActivityLevelThreshold not found' }, { status: 404 });
+      }
+      const stored = (m.rows ?? seed).find(
+        (r) => r.activityId === key.activityId && r.level === key.level,
+      );
+      return HttpResponse.json({
+        ...key,
+        xpRequired: m.lookup ? m.lookup.xpRequired : (stored?.xpRequired ?? 0),
+      });
     }),
     http.post('*/api/threshold', async ({ request }) => {
       if (m.writeStatus) return fail();
@@ -280,6 +297,54 @@ describe('Leveling rules — editing and deleting', () => {
     await waitFor(() => expect(messages()).toContain('Level 3 now needs 400 XP'));
   });
 
+  it('re-reads the level before it asks to confirm an edit', async () => {
+    const calls = mockLeveling();
+    renderLeveling();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit level 3' }));
+    const field = screen.getByLabelText('XP required for level 3');
+    await userEvent.clear(field);
+    await userEvent.type(field, '400');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await screen.findByRole('alertdialog');
+    expect(calls.lookups).toEqual([{ activityId: 12, level: 3 }]);
+    expect(screen.queryByText(/changed since you opened it/)).not.toBeInTheDocument();
+  });
+
+  it('says so when the level changed since the page was opened', async () => {
+    mockLeveling({ lookup: { xpRequired: 380 } });
+    renderLeveling();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit level 3' }));
+    const field = screen.getByLabelText('XP required for level 3');
+    await userEvent.clear(field);
+    await userEvent.type(field, '400');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(
+      await screen.findByText(/Level 3 now needs 380 XP \(it changed since you opened it\)/),
+    ).toBeInTheDocument();
+  });
+
+  it('refreshes instead of confirming when the level was removed meanwhile', async () => {
+    const calls = mockLeveling({ lookup: 404 });
+    renderLeveling();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit level 3' }));
+    const field = screen.getByLabelText('XP required for level 3');
+    await userEvent.clear(field);
+    await userEvent.type(field, '400');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() =>
+      expect(messages()).toContain('Level 3 no longer exists. The ladder has been refreshed.'),
+    );
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('XP required for level 3')).not.toBeInTheDocument();
+    expect(calls.updated).toEqual([]);
+  });
+
   it('rejects an edit that breaks the curve before it asks the server', async () => {
     const calls = mockLeveling();
     renderLeveling();
@@ -295,6 +360,7 @@ describe('Leveling rules — editing and deleting', () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(calls.updated).toEqual([]);
+    expect(calls.lookups).toEqual([]); // nothing to confirm, so nothing to re-read
   });
 
   it('deletes a level after a confirm', async () => {

@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Link } from 'react-router';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { buttonClass } from '@/components/ui/buttonStyles';
 import { toast } from '@/components/ui/toastStore';
 import { effectiveMultiplier, type CatalogActivity } from '@/features/activities/types';
 import { CATEGORY_LABEL } from '@/lib/api/types';
@@ -157,6 +159,14 @@ export function CatalogTable({ rows, onEdit }: CatalogTableProps) {
                     </div>
                   ) : (
                     <div className="flex gap-1">
+                      <Link
+                        to={`/app/activities/${a.id}`}
+                        aria-label={`View ${a.name}`}
+                        className={buttonClass('ghost')}
+                      >
+                        <Eye className="size-4" aria-hidden="true" />
+                        View
+                      </Link>
                       <Button
                         variant="ghost"
                         aria-label={`Edit ${a.name}`}

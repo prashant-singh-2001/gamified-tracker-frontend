@@ -21,7 +21,8 @@ export const qk = {
     all: ['activities'] as const,
     list: () => ['activities', 'list'] as const,
     admin: () => ['activities', 'admin'] as const,
-    byId: (id: number) => ['activities', 'byId', id] as const,
+    byId: (idOrName: number | string, includeInactive = false) =>
+      ['activities', 'byId', idOrName, includeInactive] as const,
   },
   activityLog: {
     /** Prefixes, for invalidating every user's/streak list at once without touching `byId`. */
@@ -42,13 +43,15 @@ export const qk = {
     xpOverTime: (userId: number, days: number) =>
       ['analytics', 'xpOverTime', userId, days] as const,
     categorySummary: (userId: number) => ['analytics', 'categorySummary', userId] as const,
-    weeklyReport: (userId: number) => ['analytics', 'weeklyReport', userId] as const,
+    weeklyReport: (userId: number, mode: string) =>
+      ['analytics', 'weeklyReport', userId, mode] as const,
     bestTimeOfDay: (userId: number) => ['analytics', 'bestTimeOfDay', userId] as const,
   },
   levels: {
     allPrefix: ['levels'] as const,
     all: () => ['levels', 'all'] as const,
     byUser: (userId: number) => ['levels', 'user', userId] as const,
+    byId: (id: number) => ['levels', 'row', id] as const,
     byActivity: (activityId: number | string) => ['levels', 'activity', activityId] as const,
   },
   thresholds: {

@@ -14,7 +14,13 @@ import { formatNumber } from '@/lib/utils/format';
 import { AdminPageHeader } from '../../components/AdminPageHeader';
 import { sortCatalog } from '../../catalog/catalog';
 import { useAdminCatalog } from '../../catalog/api';
-import { useAllThresholds, useDeleteThreshold, useSaveThreshold, useUpdateThreshold } from '../api';
+import {
+  useAllThresholds,
+  useDeleteThreshold,
+  useReadThreshold,
+  useSaveThreshold,
+  useUpdateThreshold,
+} from '../api';
 import { checkLevel, explicitRows, withLevel, withSteps } from '../curve';
 import { CurveChart } from '../components/CurveChart';
 import { LadderTable } from '../components/LadderTable';
@@ -24,7 +30,7 @@ const DEFAULT_LEVELS = 12;
 
 type Confirm =
   | { kind: 'add'; level: number; xp: number }
-  | { kind: 'edit'; level: number; xp: number }
+  | { kind: 'edit'; level: number; xp: number; changedTo?: number }
   | { kind: 'delete'; level: number };
 
 /**
@@ -50,7 +56,8 @@ export default function LevelingRulesPage() {
   const save = useSaveThreshold();
   const update = useUpdateThreshold();
   const remove = useDeleteThreshold();
-  const busy = save.isPending || update.isPending || remove.isPending;
+  const read = useReadThreshold();
+  const busy = save.isPending || update.isPending || remove.isPending || read.isPending;
 
   const [level, setLevel] = useState('');
   const [xp, setXp] = useState('');
@@ -77,16 +84,45 @@ export default function LevelingRulesPage() {
     void navigate(`/admin/leveling?activity=${id}`, { replace: true });
   }
 
+  /**
+   * An edit re-reads the level before it asks to confirm: the ladder on screen may be old, and
+   * the admin should see if someone else already changed this level (or removed it).
+   */
   function requestEdit() {
     if (!editing) return;
     const value = Number(editing.xp);
     const problem =
       editing.xp.trim() === '' ? 'Enter the XP required' : checkLevel(own, editing.level, value);
     setEditError(problem);
-    if (!problem) {
-      setServerError(null);
-      setConfirm({ kind: 'edit', level: editing.level, xp: value });
-    }
+    if (problem) return;
+    const { level: editLevel } = editing;
+    setServerError(null);
+    read.mutate(
+      { activityId, level: editLevel },
+      {
+        onSuccess: (fresh) => {
+          const shown = own.find((r) => r.level === editLevel)?.xpRequired;
+          const changed = shown !== undefined && fresh.xpRequired !== shown;
+          setConfirm({
+            kind: 'edit',
+            level: editLevel,
+            xp: value,
+            changedTo: changed ? fresh.xpRequired : undefined,
+          });
+          if (changed) void all.refetch();
+        },
+        onError: (err) => {
+          if (toApiError(err).status === 404) {
+            setEditing(null);
+            setEditError(null);
+            void all.refetch();
+            toast.info(`Level ${editLevel} no longer exists. The ladder has been refreshed.`);
+          } else {
+            toast.error("Couldn't check that level. Try again.");
+          }
+        },
+      },
+    );
   }
 
   function run(c: Confirm) {
@@ -228,6 +264,12 @@ export default function LevelingRulesPage() {
                     <li>
                       Level {confirm.level} already needs {formatNumber(replacing.xpRequired)} XP;
                       this replaces it.
+                    </li>
+                  )}
+                  {confirm.kind === 'edit' && confirm.changedTo !== undefined && (
+                    <li>
+                      Level {confirm.level} now needs {formatNumber(confirm.changedTo)} XP (it
+                      changed since you opened it); this replaces that.
                     </li>
                   )}
                   {confirm.kind === 'delete' && own.length === 1 && (

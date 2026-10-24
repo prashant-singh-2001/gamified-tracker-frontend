@@ -291,3 +291,88 @@ describe('History — log details', () => {
     expect(await screen.findByText("Couldn't load this log")).toBeInTheDocument();
   });
 });
+
+describe('History — sort and custom dates', () => {
+  it('sends the chosen sort to the server and keeps it in the URL', async () => {
+    const requests = mockHistory();
+    const { router } = renderHistory();
+    await screen.findByRole('heading', { name: /^Today/ });
+    expect(requests[0]?.get('sort')).toBe('startTime,desc');
+
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Sort' }), 'Oldest first');
+    await waitFor(() => expect(requests.at(-1)?.get('sort')).toBe('startTime,asc'));
+    expect(router.state.location.search).toBe('?sort=oldest');
+    expect(await screen.findByText('3 logs, oldest first.')).toBeInTheDocument();
+    // Date sorts keep the trail of days.
+    expect(screen.getByRole('heading', { name: /^Today/ })).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Sort' }), 'Longest');
+    await waitFor(() => expect(requests.at(-1)?.get('sort')).toBe('durationMinutes,desc'));
+  });
+
+  it('shows a numbered list, not days, when sorted by XP', async () => {
+    const requests = mockHistory();
+    renderHistory('/app/history?sort=xp');
+
+    const list = await screen.findByRole('list', { name: 'Logs, Most XP' });
+    expect(requests[0]?.get('sort')).toBe('xpEarned,desc');
+    expect(within(list).getAllByRole('listitem')).toHaveLength(3);
+    expect(within(list).getByText('1')).toBeInTheDocument();
+    expect(within(list).getByText('3')).toBeInTheDocument();
+    // Each row names its day, since the list is not grouped under one.
+    expect(within(list).getAllByText(/Today · /).length).toBe(3);
+    expect(screen.queryByRole('heading', { name: /^Today/ })).not.toBeInTheDocument();
+    expect(screen.getByText('3 logs, most XP first.')).toBeInTheDocument();
+  });
+
+  it('does not call a sort a filter', async () => {
+    mockHistory({ page: () => envelope([]) });
+    renderHistory('/app/history?sort=xp');
+    expect(await screen.findByText('No logs yet')).toBeInTheDocument();
+  });
+
+  it('sends both dates for a custom range and keeps them in the URL', async () => {
+    const requests = mockHistory();
+    const { router } = renderHistory();
+    await screen.findByRole('heading', { name: /^Today/ });
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom' }));
+    expect(screen.getByLabelText('From')).toBeInTheDocument();
+    expect(screen.getByLabelText('To')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('From'), { target: { value: '2026-10-01' } });
+    fireEvent.change(screen.getByLabelText('To'), { target: { value: '2026-10-15' } });
+    await waitFor(() => {
+      expect(requests.at(-1)?.get('from')).toBe('2026-10-01');
+      expect(requests.at(-1)?.get('to')).toBe('2026-10-15');
+    });
+    expect(router.state.location.search).toBe('?range=custom&from=2026-10-01&to=2026-10-15');
+    expect(screen.getByRole('radio', { name: 'Custom' })).toBeChecked();
+    expect(screen.getByText('3 logs match, newest first.')).toBeInTheDocument();
+  });
+
+  it('explains an end before the start instead of sending it', async () => {
+    const requests = mockHistory();
+    renderHistory('/app/history?range=custom&from=2026-10-10');
+    await screen.findByRole('heading', { name: /^Today/ });
+    const before = requests.length;
+
+    fireEvent.change(screen.getByLabelText('To'), { target: { value: '2026-10-01' } });
+    expect(
+      await screen.findByText('The end date must be on or after the start date'),
+    ).toBeInTheDocument();
+    await new Promise((r) => setTimeout(r, 60));
+    expect(requests.length).toBe(before);
+  });
+
+  it('starts a preset clean after custom dates', async () => {
+    const requests = mockHistory();
+    const { router } = renderHistory('/app/history?range=custom&from=2026-10-01&to=2026-10-15');
+    await screen.findByRole('heading', { name: /^Today/ });
+
+    await userEvent.click(screen.getByRole('radio', { name: '30 days' }));
+    await waitFor(() => expect(router.state.location.search).toBe('?range=30'));
+    await waitFor(() => expect(requests.at(-1)?.get('from')).toBe(rangeStart(30)));
+    expect(requests.at(-1)?.has('to')).toBe(false);
+  });
+});

@@ -135,6 +135,23 @@ describe('Catalog — the table', () => {
   });
 });
 
+describe('Catalog — viewing in the app', () => {
+  it('links each activity to its page in the app, inactive ones included', async () => {
+    mockCatalog();
+    renderCatalog();
+
+    expect(await screen.findByRole('link', { name: 'View Deep work' })).toHaveAttribute(
+      'href',
+      '/app/activities/2',
+    );
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Show inactive' }));
+    expect(screen.getByRole('link', { name: 'View Archery' })).toHaveAttribute(
+      'href',
+      '/app/activities/3',
+    );
+  });
+});
+
 describe('Catalog — creating', () => {
   it('creates an activity with an override and a description', async () => {
     const calls = mockCatalog();

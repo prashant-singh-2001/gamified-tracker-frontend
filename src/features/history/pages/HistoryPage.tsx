@@ -10,9 +10,17 @@ import { formatNumber } from '@/lib/utils/format';
 import { useLogPages } from '../api';
 import { HistoryFilters } from '../components/HistoryFilters';
 import { HistoryTrail } from '../components/HistoryTrail';
-import { filtersFromParams, filtersToSearch, isFiltered } from '../filters';
+import { RankedList } from '../components/RankedList';
+import { filtersFromParams, filtersToSearch, isFiltered, isRanked, SORT_LABEL } from '../filters';
 import { groupByDay } from '../group';
 import type { HistoryFilters as Filters } from '../types';
+
+const ORDER: Record<Filters['sort'], string> = {
+  newest: 'newest first',
+  oldest: 'oldest first',
+  xp: 'most XP first',
+  longest: 'longest first',
+};
 
 /**
  * Every log, newest first, grouped by day along one trail. The server filters and pages (50 at a
@@ -47,7 +55,7 @@ export default function HistoryPage() {
               ? filtered
                 ? 'No logs match.'
                 : 'Every session you log lands here.'
-              : `${formatNumber(total)} ${total === 1 ? 'log' : 'logs'}${filtered ? ' match' : ''}, newest first.`
+              : `${formatNumber(total)} ${total === 1 ? 'log' : 'logs'}${filtered ? ' match' : ''}, ${ORDER[filters.sort]}.`
             : 'Every session you log lands here.'}
         </p>
       </header>
@@ -92,7 +100,11 @@ export default function HistoryPage() {
         )
       ) : (
         <>
-          <HistoryTrail groups={groups} search={search} />
+          {isRanked(filters.sort) ? (
+            <RankedList logs={logs} search={search} label={`Logs, ${SORT_LABEL[filters.sort]}`} />
+          ) : (
+            <HistoryTrail groups={groups} search={search} />
+          )}
           {pages.hasNextPage && (
             <Button
               variant="secondary"

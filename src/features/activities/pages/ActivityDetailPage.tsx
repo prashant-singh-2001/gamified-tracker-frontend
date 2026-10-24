@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router';
+import { Link, Navigate, useParams } from 'react-router';
 import { ArrowRight } from 'lucide-react';
 import { buttonClass } from '@/components/ui/buttonStyles';
 import { Card } from '@/components/ui/Card';
@@ -9,6 +9,7 @@ import { StreakPill } from '@/components/ui/StreakPill';
 import { useLogPages } from '@/features/history/api';
 import { LogRow } from '@/features/history/components/LogRow';
 import { isNotFound } from '@/lib/api/errors';
+import { useAuthStore } from '@/lib/auth/authStore';
 import { CATEGORY_LABEL } from '@/lib/api/types';
 import { CATEGORY_ICON } from '@/lib/utils/category';
 import { formatMultiplier, formatNumber } from '@/lib/utils/format';
@@ -18,7 +19,7 @@ import { LevelLadder } from '../components/LevelLadder';
 import { LevelRing } from '../components/LevelRing';
 import { ladderWindow, levelProgress } from '../levels';
 import { isStreakAlive } from '../streaks';
-import { effectiveMultiplier } from '../types';
+import { effectiveMultiplier, type CatalogActivity } from '../types';
 
 const lastDay = (date: string) =>
   new Date(`${date}T00:00:00Z`).toLocaleDateString('en-US', {
@@ -29,18 +30,13 @@ const lastDay = (date: string) =>
 
 /**
  * How far you are in one activity: the level ring, the streak, what the next levels cost, and your
- * last sessions. It opens from a level-up notification and from History.
+ * last sessions. It opens from a level-up notification and from History, by id or by name, and
+ * an admin can open a deactivated activity too.
  */
 export default function ActivityDetailPage() {
-  const params = useParams();
-  const activityId = Number(params.activityId);
-  const activity = useActivity(activityId);
-  const levels = useMyLevels();
-  const streaks = useStreaks();
-
-  const tracker = levels.data?.find((l) => l.activityId === activityId);
-  const ladder = useLadder(activityId, (tracker?.level ?? 1) + 5);
-  const recent = useLogPages({ ...NO_FILTERS, activityId });
+  const { idOrName = '' } = useParams();
+  const isAdmin = useAuthStore((s) => s.user?.role === 'ADMIN');
+  const activity = useActivity(idOrName, isAdmin);
 
   if (activity.isPending) {
     return (
@@ -80,7 +76,23 @@ export default function ActivityDetailPage() {
     );
   }
 
-  const a = activity.data;
+  // A link by name settles on the id once it resolves, so the address stays the same afterwards.
+  if (String(activity.data.id) !== idOrName) {
+    return <Navigate to={`/app/activities/${activity.data.id}`} replace />;
+  }
+  return <ActivityDetail activity={activity.data} />;
+}
+
+function ActivityDetail({ activity: a }: { activity: CatalogActivity }) {
+  const activityId = a.id;
+  const levels = useMyLevels();
+  const streaks = useStreaks();
+  const tracker = levels.data?.find((l) => l.activityId === activityId);
+  const ladder = useLadder(activityId, (tracker?.level ?? 1) + 5);
+  const recent = useLogPages({ ...NO_FILTERS, activityId });
+  // Until both the level and the ladder are in, progress is a guess, so say nothing about it.
+  const settling = levels.isPending || (ladder.isPending && !levels.isError);
+
   const Icon = CATEGORY_ICON[a.category];
   const progress = levelProgress(tracker, ladder.data ?? []);
   const streak = streaks.data?.find((s) => s.activityId === activityId);
@@ -104,8 +116,14 @@ export default function ActivityDetailPage() {
         </p>
       </header>
 
+      {!a.active && (
+        <p role="status" className="rounded-xl border border-line-strong px-4 py-3 text-soft">
+          This activity is inactive. It is hidden from the Log screen and cannot be logged.
+        </p>
+      )}
+
       <section aria-label="Your level" className="flex flex-wrap items-center gap-x-10 gap-y-6">
-        {levels.isPending ? (
+        {settling ? (
           <Skeleton className="size-40 rounded-full" />
         ) : (
           <LevelRing
@@ -117,6 +135,8 @@ export default function ActivityDetailPage() {
         <div className="flex min-w-[15rem] flex-1 flex-col gap-3">
           {levels.isError ? (
             <p className="text-soft">Couldn&apos;t load your level.</p>
+          ) : settling ? (
+            <Skeleton className="h-7 w-56" />
           ) : !tracker && levels.isSuccess ? (
             <p className="text-lg text-soft">Log it once to start levelling.</p>
           ) : progress.nextLevel === null ? (
@@ -195,12 +215,14 @@ export default function ActivityDetailPage() {
         </Link>
       </section>
 
-      <Link
-        to={`/app/log?activity=${encodeURIComponent(a.name)}`}
-        className={buttonClass('primary', 'lg', 'self-start rounded-full px-8')}
-      >
-        Log this activity
-      </Link>
+      {a.active && (
+        <Link
+          to={`/app/log?activity=${encodeURIComponent(a.name)}`}
+          className={buttonClass('primary', 'lg', 'self-start rounded-full px-8')}
+        >
+          Log this activity
+        </Link>
+      )}
     </div>
   );
 }

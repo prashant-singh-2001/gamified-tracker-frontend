@@ -83,13 +83,14 @@ type Mocks = {
 };
 
 function mockStats(m: Mocks = {}) {
-  const calls = { days: [] as number[] };
+  const calls = { days: [] as number[], modes: [] as string[] };
   server.use(
-    http.get(`${BASE}/weekly-report`, () =>
-      m.weekStatus
+    http.get(`${BASE}/weekly-report`, ({ request }) => {
+      calls.modes.push(new URL(request.url).searchParams.get('mode') ?? '');
+      return m.weekStatus
         ? HttpResponse.json({ detail: 'Analytics are down' }, { status: m.weekStatus })
-        : HttpResponse.json(m.week ?? week()),
-    ),
+        : HttpResponse.json(m.week ?? week());
+    }),
     http.get(`${BASE}/xp-over-time`, ({ request }) => {
       const days = Number(new URL(request.url).searchParams.get('days'));
       calls.days.push(days);
@@ -101,9 +102,9 @@ function mockStats(m: Mocks = {}) {
   return calls;
 }
 
-function renderStats() {
+function renderStats(path = '/app/stats') {
   signIn(ME, 'USER');
-  return renderRoutes([{ path: '/app/stats', element: <StatsPage /> }], '/app/stats');
+  return renderRoutes([{ path: '/app/stats', element: <StatsPage /> }], path);
 }
 
 describe('Stats page', () => {
@@ -166,6 +167,44 @@ describe('Stats — this week', () => {
     renderStats();
     expect(await screen.findByText('Log an activity to start your week.')).toBeInTheDocument();
     expect(screen.getByText('Nothing logged yet this week.')).toBeInTheDocument();
+  });
+});
+
+describe('Stats — this week or the last 7 days', () => {
+  it('asks for the calendar week by default and the rolling one when chosen', async () => {
+    const calls = mockStats();
+    const { router } = renderStats();
+
+    await screen.findByText(/down on the same days last week/);
+    expect(calls.modes).toEqual(['calendar']);
+    expect(screen.getByRole('radio', { name: 'This week' })).toBeChecked();
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Last 7 days' }));
+    await waitFor(() => expect(calls.modes).toContain('rolling'));
+    expect(router.state.location.search).toBe('?week=rolling');
+    expect(screen.getByRole('radio', { name: 'Last 7 days' })).toBeChecked();
+    expect(await screen.findByText(/down on the 7 days before/)).toBeInTheDocument();
+  });
+
+  it('opens on the last 7 days from the URL, and can go back', async () => {
+    const calls = mockStats();
+    const { router } = renderStats('/app/stats?week=rolling');
+
+    await screen.findByText(/down on the 7 days before/);
+    expect(calls.modes).toEqual(['rolling']);
+
+    await userEvent.click(screen.getByRole('radio', { name: 'This week' }));
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    expect(await screen.findByText(/down on the same days last week/)).toBeInTheDocument();
+  });
+
+  it('keeps the range of the trend when the week changes', async () => {
+    mockStats();
+    renderStats('/app/stats?week=rolling');
+    await screen.findByText(/of 30 days/);
+    await userEvent.click(screen.getByRole('radio', { name: '7 days' }));
+    expect(await screen.findByText(/of 7 days/)).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Last 7 days' })).toBeChecked();
   });
 });
 

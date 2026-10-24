@@ -4,7 +4,7 @@ import { endpoints } from '@/lib/api/endpoints';
 import { qk } from '@/lib/api/queryKeys';
 import { useUserId } from '@/lib/auth/useUserId';
 import type { ActivityLogResponse } from '@/features/log-activity/types';
-import { rangeStart } from './filters';
+import { rangeDates, SORT_PARAM } from './filters';
 import type { HistoryFilters, LogPage } from './types';
 
 /** Every log of the current user, unpaged. Home uses it for its recent list and streak names. */
@@ -21,7 +21,7 @@ export function useMyLogs() {
 /** Logs per request on the History screen. */
 export const HISTORY_PAGE = 50;
 
-/** History: newest first, `HISTORY_PAGE` at a time, filtered by the server. */
+/** History in the chosen order, `HISTORY_PAGE` at a time, filtered and sorted by the server. */
 export function useLogPages(filters: HistoryFilters) {
   const userId = useUserId();
   return useInfiniteQuery({
@@ -34,9 +34,9 @@ export function useLogPages(filters: HistoryFilters) {
           params: {
             page: pageParam,
             size: HISTORY_PAGE,
-            sort: 'startTime,desc',
+            sort: SORT_PARAM[filters.sort],
             activityId: filters.activityId ?? undefined,
-            from: rangeStart(filters.range),
+            ...rangeDates(filters),
           },
         })
       ).data,

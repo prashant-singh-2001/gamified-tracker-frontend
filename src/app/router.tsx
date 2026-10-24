@@ -83,7 +83,7 @@ const routes: RouteObject[] = [
             ],
           },
           {
-            path: 'activities/:activityId',
+            path: 'activities/:idOrName',
             ...page(() => import('@/features/activities/pages/ActivityDetailPage')),
           },
           { path: 'ranks', ...page(() => import('@/features/ranks/pages/RanksPage')) },
