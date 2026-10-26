@@ -64,7 +64,19 @@ function mockLeveling(m: Mocks = {}) {
       );
     }),
     http.post('*/api/threshold/activity', async ({ request }) => {
-      const key = (await request.json()) as { activityId: number; level: number };
+      const body = (await request.json()) as {
+        activityId: number;
+        level: number;
+        xpRequired?: number;
+      };
+      // Like the real backend: the value is ignored but must be positive, or it is a 400.
+      if (!(body.xpRequired && body.xpRequired > 0)) {
+        return HttpResponse.json(
+          { status: 400, detail: 'level cannot be negative or zero' },
+          { status: 400 },
+        );
+      }
+      const key = { activityId: body.activityId, level: body.level };
       calls.lookups.push(key);
       if (m.lookup === 404) {
         return HttpResponse.json({ detail: 'ActivityLevelThreshold not found' }, { status: 404 });

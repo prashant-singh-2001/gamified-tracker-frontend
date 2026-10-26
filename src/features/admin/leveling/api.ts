@@ -25,7 +25,9 @@ function useRefreshThresholds() {
 export function useReadThreshold() {
   return useMutation({
     mutationFn: async (key: Pick<Threshold, 'activityId' | 'level'>) =>
-      (await api.post<Threshold>(endpoints.thresholds.lookup, key)).data,
+      // The body is only a key, but the backend still validates `xpRequired` as positive (and
+      // answers 400 without it), so a placeholder is sent. It is ignored.
+      (await api.post<Threshold>(endpoints.thresholds.lookup, { ...key, xpRequired: 1 })).data,
   });
 }
 
