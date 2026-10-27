@@ -1,0 +1,79 @@
+name: Docker
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # The image must stay small: the build fails past this, so growth is a decision, not an accident.
+  IMAGE_BUDGET_MB: 25
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: etram-web:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Check the size and that it serves
+        run: |
+          bytes=$(docker image inspect etram-web:ci --format '{{.Size}}')
+          mb=$(awk "BEGIN { printf \"%.1f\", $bytes / 1000000 }")
+          echo "### Image size: ${mb} MB (budget ${IMAGE_BUDGET_MB} MB)" >> "$GITHUB_STEP_SUMMARY"
+          awk "BEGIN { exit !($bytes / 1000000 <= $IMAGE_BUDGET_MB) }" \
+            || { echo "::error::The image is ${mb} MB, over the ${IMAGE_BUDGET_MB} MB budget"; exit 1; }
+
+          # It starts without a backend (the API is looked up per request), runs as a non-root user,
+          # serves the app and answers a deep link with the app.
+          docker run -d --name web -p 8080:8080 etram-web:ci
+          for i in $(seq 1 20); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' web)" = healthy ] && break
+            sleep 1
+          done
+          curl -fsS http://localhost:8080/healthz
+          curl -fsS http://localhost:8080/app/history | grep -q '<div id="root">'
+          [ "$(docker exec web id -un)" = nginx ]
+          docker rm -f web
+
+      - name: Log in to the registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:sha-${{ github.sha }}
+          cache-from: type=gha
