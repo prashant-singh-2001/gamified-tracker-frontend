@@ -1,0 +1,55 @@
+# Rendered at start by the nginx image's envsubst step. Only ${API_UPSTREAM} and
+# ${NGINX_LOCAL_RESOLVERS} (read from /etc/resolv.conf by the image) are substituted; the other $
+# names below are nginx variables.
+server {
+  listen 8080;
+  server_name _;
+
+  root /usr/share/nginx/html;
+  index index.html;
+
+  include /etc/nginx/snippets/security-headers.conf;
+
+  # Resolve the upstream at request time, so the container starts (and recovers) even when the
+  # gateway is not up yet.
+  resolver ${NGINX_LOCAL_RESOLVERS} valid=10s ipv6=off;
+
+  location = /healthz {
+    access_log off;
+    default_type text/plain;
+    return 200 "ok\n";
+  }
+
+  # The API, same-origin. The gateway's CORS policy is closed, and browsers attach `Origin` to POSTs
+  # even same-origin, so it is dropped here, exactly as the Vite dev proxy does.
+  location ~ ^/(api|auth|users)/ {
+    set $upstream ${API_UPSTREAM};
+    proxy_pass $upstream;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Origin "";
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    # The weekly coach waits on a language model and can take a while.
+    proxy_read_timeout 120s;
+    proxy_send_timeout 60s;
+  }
+
+  # Hashed file names never change, so they can be cached for good.
+  location /assets/ {
+    include /etc/nginx/snippets/security-headers.conf;
+    add_header Cache-Control "public, max-age=31536000, immutable" always;
+    try_files $uri =404;
+  }
+
+  # The entry point must always be re-checked, because it names the current hashed files.
+  location = /index.html {
+    include /etc/nginx/snippets/security-headers.conf;
+    add_header Cache-Control "no-cache" always;
+  }
+
+  # Every other path is a client-side route.
+  location / {
+    try_files $uri /index.html;
+  }
+}
