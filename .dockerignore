@@ -1,0 +1,26 @@
+node_modules
+dist
+dist-ssr
+coverage
+*.tsbuildinfo
+
+.git
+.github
+.claude
+.vscode
+.idea
+
+# Docs and design specs are not part of the build.
+*.md
+req
+etram-screens.md
+
+# Local env files (the example is harmless).
+.env
+.env.*
+!.env.example
+
+# The image builds its own.
+Dockerfile
+docker-compose*.yml
+.dockerignore

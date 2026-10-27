@@ -7,7 +7,9 @@ import { defineConfig } from 'vitest/config';
 // that mixes up local and UTC time must fail the same way on a UTC CI runner as on a laptop.
 process.env.TZ = 'Asia/Kolkata';
 
-const GATEWAY = 'http://localhost:8080';
+// Where /api, /auth and /users go in dev. The dev container points it at the gateway on the backend's
+// Docker network (see docker-compose.yml); a local `npm run dev` keeps the default.
+const GATEWAY = process.env.VITE_PROXY_TARGET ?? 'http://localhost:8080';
 
 // Browsers attach `Origin: http://localhost:5173` to POSTs even when they are same-origin, and the
 // gateway (CORS closed by default) rejects it with a bare 403. Dropping it in the proxy makes the
@@ -29,6 +31,8 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // File events do not cross a Windows or macOS bind mount, so the dev container polls instead.
+    watch: process.env.VITE_USE_POLLING ? { usePolling: true, interval: 300 } : undefined,
     // Same-origin requests in dev, so no CORS setup is needed on the gateway.
     proxy: {
       '/api': proxyTo,

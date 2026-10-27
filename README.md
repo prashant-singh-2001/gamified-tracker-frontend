@@ -80,6 +80,50 @@ To call the gateway directly, set `VITE_API_BASE_URL=http://localhost:8080` and 
 - **New accounts are "not ranked yet"** until the backend's next rank refresh (about every 30
   seconds).
 
+## Run with Docker
+
+The image is a multi-stage build: Node compiles the app, and only the compiled files go into a slim
+nginx image that runs as a non-root user. It is about **23 MB** (CI fails the build above 25 MB).
+nginx serves the app (files are pre-compressed, hashed assets are cached for a year, `index.html` is
+never cached, every other path falls back to the app) and proxies `/api`, `/auth` and `/users` to
+the gateway. It drops the browser's `Origin` header on the way, like the Vite dev proxy, so the
+gateway's closed CORS policy needs no change. It also sets security headers, including a strict
+Content-Security-Policy.
+
+Start the backend first (`docker compose up -d` in the `gamified_tracker` repo): both services here
+join its Docker network (`gamified_tracker_default`) to reach the gateway at `gateway:8080`.
+
+```bash
+docker compose up -d --build              # production image, http://localhost:8090
+docker compose --profile dev up dev       # Vite with hot reload, http://localhost:5173
+```
+
+The `dev` service needs no Node on your machine: it mounts the source, installs dependencies in a
+volume and reloads on every change (it polls for changes, because file events do not cross a
+Windows or macOS bind mount).
+
+| Setting           | Default                      | What it does                                                    |
+| ----------------- | ---------------------------- | --------------------------------------------------------------- |
+| `WEB_PORT`        | `8090`                       | Host port for the production image (8080 is the gateway)        |
+| `DEV_PORT`        | `5173`                       | Host port for the dev server                                    |
+| `API_UPSTREAM`    | `http://gateway:8080`        | Where `/api`, `/auth` and `/users` are proxied                  |
+| `BACKEND_NETWORK` | `gamified_tracker_default`   | The backend's compose network, which both services join         |
+
+Set them in the shell or a `.env` file. Without the backend's network, compose stops with "network
+not found": start the backend first. The proxy looks the gateway up on each request, so the web
+container also starts, and recovers by itself, when the gateway is down (`/api` answers 502 until it
+is back).
+
+The `Docker` workflow builds the image on every pull request, fails if it is over budget, checks that
+it starts and serves a deep link, and on every push to `main` publishes it to GitHub's container
+registry:
+
+```bash
+docker pull ghcr.io/prashant-singh-2001/gamified-tracker-frontend:latest
+docker run -p 8090:8080 --network gamified_tracker_default \
+  ghcr.io/prashant-singh-2001/gamified-tracker-frontend:latest
+```
+
 ## Scripts
 
 | Script | What it does |
@@ -109,6 +153,7 @@ src/
   styles/       design tokens and the survey-sheet theme
   test/         Vitest setup, the MSW server, test helpers
 req/            the screen-by-screen design spec
+docker/         nginx config for the image (Dockerfile and docker-compose.yml are at the root)
 ```
 
 Every endpoint path lives in `src/lib/api/endpoints.ts` and every query key in

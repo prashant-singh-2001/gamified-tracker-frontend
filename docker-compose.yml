@@ -1,0 +1,51 @@
+# Runs the web app next to the backend. Start the backend first (`docker compose up -d` in the
+# gamified_tracker repo): both services here join its network to reach the gateway.
+#
+#   docker compose up -d --build            production image, http://localhost:8090
+#   docker compose --profile dev up dev     Vite with hot reload, http://localhost:5173
+#
+# Settings (all optional, via the shell or a .env file):
+#   WEB_PORT          host port for the production image         (default 8090)
+#   DEV_PORT          host port for the dev server                (default 5173)
+#   API_UPSTREAM      where /api, /auth and /users are proxied    (default http://gateway:8080)
+#   BACKEND_NETWORK   the backend's compose network               (default gamified_tracker_default)
+name: etram-web
+
+services:
+  web:
+    build:
+      context: .
+      target: runtime
+    image: etram-web:local
+    ports:
+      - '${WEB_PORT:-8090}:8080'
+    environment:
+      API_UPSTREAM: ${API_UPSTREAM:-http://gateway:8080}
+    restart: unless-stopped
+    networks: [backend]
+
+  # Development without Node installed: the source is mounted and Vite reloads on every change.
+  # Polling is on because file events do not cross a Windows or macOS bind mount reliably.
+  dev:
+    profiles: [dev]
+    image: node:24-alpine
+    working_dir: /app
+    command: sh -c "[ -x node_modules/.bin/vite ] || npm ci; exec npm run dev -- --host 0.0.0.0"
+    environment:
+      VITE_PROXY_TARGET: ${API_UPSTREAM:-http://gateway:8080}
+      VITE_USE_POLLING: '1'
+    ports:
+      - '${DEV_PORT:-5173}:5173'
+    volumes:
+      - .:/app
+      # The container's own dependencies, so the host's node_modules never shadows them.
+      - node_modules:/app/node_modules
+    networks: [backend]
+
+networks:
+  backend:
+    name: ${BACKEND_NETWORK:-gamified_tracker_default}
+    external: true
+
+volumes:
+  node_modules:
